@@ -43,6 +43,7 @@ interface DashboardShellProps {
 
 const navItems: { href: string; label: string; icon: React.ElementType; roles?: UserRole[] }[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/admin/users', label: 'Users', icon: Users, roles: ['admin'] },
   { href: '/dashboard/employees', label: 'Employees', icon: Users, roles: ['admin', 'hr_manager'] },
   { href: '/dashboard/leave', label: 'Leave', icon: Calendar },
   { href: '/dashboard/payroll', label: 'Payroll', icon: DollarSign },
