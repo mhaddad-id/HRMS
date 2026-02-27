@@ -14,10 +14,18 @@ export async function createClient() {
           return cookieStore.get(name)?.value;
         },
         set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options });
+          try {
+            cookieStore.set({ name, value, ...options });
+          } catch {
+            // cookies() is read-only in Server Components; ignore write attempts
+          }
         },
         remove(name: string, options: any) {
-          cookieStore.set({ name, value: "", ...options });
+          try {
+            cookieStore.set({ name, value: "", ...options });
+          } catch {
+            // cookies() is read-only in Server Components; ignore write attempts
+          }
         },
       },
     }

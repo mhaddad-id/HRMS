@@ -28,6 +28,19 @@ export function UsersTable({ users }: UsersTableProps) {
     const { toast } = useToast();
     const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
 
+    const getFallbackNameParts = (user: User) => {
+        const directFirst = user.first_name ?? '';
+        const directLast = user.last_name ?? '';
+        if (directFirst || directLast) return { first: directFirst, last: directLast };
+        const full = (user.full_name ?? '').trim();
+        if (!full) return { first: '', last: '' };
+        const parts = full.split(/\s+/);
+        return {
+            first: parts[0] ?? '',
+            last: parts.slice(1).join(' '),
+        };
+    };
+
     const handleRoleChange = async (userId: string, newRole: string) => {
         setLoadingIds((prev) => new Set(prev).add(userId));
 
@@ -62,20 +75,29 @@ export function UsersTable({ users }: UsersTableProps) {
     };
 
     return (
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-x-auto">
             <Table>
                 <TableHeader>
                     <TableRow>
+                        <TableHead>First Name</TableHead>
+                        <TableHead>Last Name</TableHead>
+                        <TableHead>Supervisor</TableHead>
                         <TableHead>Email</TableHead>
-                        <TableHead>Created At</TableHead>
                         <TableHead>Role</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {users.map((user) => (
+                        (() => {
+                            const fallback = getFallbackNameParts(user);
+                            const firstName = user.first_name ?? fallback.first;
+                            const lastName = user.last_name ?? fallback.last;
+                            return (
                         <TableRow key={user.id}>
-                            <TableCell>{user.email}</TableCell>
-                            <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
+                            <TableCell className="whitespace-nowrap">{firstName || '—'}</TableCell>
+                            <TableCell className="whitespace-nowrap">{lastName || '—'}</TableCell>
+                            <TableCell className="whitespace-nowrap">{user.supervisor ?? '—'}</TableCell>
+                            <TableCell className="whitespace-nowrap">{user.email}</TableCell>
                             <TableCell>
                                 <Select
                                     disabled={loadingIds.has(user.id)}
@@ -93,10 +115,12 @@ export function UsersTable({ users }: UsersTableProps) {
                                 </Select>
                             </TableCell>
                         </TableRow>
+                            );
+                        })()
                     ))}
                     {users.length === 0 && (
                         <TableRow>
-                            <TableCell colSpan={3} className="text-center py-4">
+                            <TableCell colSpan={5} className="text-center py-4">
                                 No users found.
                             </TableCell>
                         </TableRow>

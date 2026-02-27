@@ -349,7 +349,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
 
         {/* Page content */}
         <div className="flex-1 overflow-auto p-4 md:p-8 custom-scrollbar">
-          <div className="mx-auto max-w-6xl w-full fade-in">
+          <div className="mx-auto max-w-screen-2xl w-full fade-in">
             {children}
           </div>
         </div>
