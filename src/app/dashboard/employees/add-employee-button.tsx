@@ -28,7 +28,11 @@ export function AddEmployeeButton({ employees }: AddEmployeeButtonProps) {
           Add Employee
         </Button>
       </DialogTrigger>
+<<<<<<< HEAD
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+=======
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+>>>>>>> ed09a8c8d317c37da0c13002591a04ddc6231cd2
         <DialogHeader>
           <DialogTitle>Add Employee</DialogTitle>
           <DialogDescription>

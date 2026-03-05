@@ -10,7 +10,11 @@ import {
   createColumnHelper,
   type ColumnDef,
 } from '@tanstack/react-table';
+<<<<<<< HEAD
 import { MoreHorizontal, Pencil, Trash2, Search } from 'lucide-react';
+=======
+import { Ban, MoreHorizontal, Pencil, RotateCcw, Trash2, UserRoundCog } from 'lucide-react';
+>>>>>>> ed09a8c8d317c37da0c13002591a04ddc6231cd2
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -38,10 +42,15 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import type { Employee } from '@/lib/database.types';
+<<<<<<< HEAD
 
 type EmployeeRow = Employee & {
   supervisor?: { id: string; first_name: string; last_name: string } | null;
 };
+=======
+import type { Department } from '@/lib/database.types';
+import { useToast } from '@/hooks/use-toast';
+>>>>>>> ed09a8c8d317c37da0c13002591a04ddc6231cd2
 
 interface EmployeesTableProps {
   employees: EmployeeRow[];
@@ -83,10 +92,12 @@ function EmployeeAvatar({ first_name, last_name }: { first_name: string; last_na
 
 export function EmployeesTable({ employees }: EmployeesTableProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState<{ id: string; value: any }[]>([]);
   const [editing, setEditing] = useState<EmployeeRow | null>(null);
 
+<<<<<<< HEAD
   // Get unique offices for filter
   const offices = Array.from(new Set(employees.map(e => e.office).filter(Boolean))).sort();
 
@@ -94,6 +105,68 @@ export function EmployeesTable({ employees }: EmployeesTableProps) {
     // ... existing columns ...
     columnHelper.accessor('employee_code', {
       header: 'ID',
+=======
+  const columns: ColumnDef<
+    Employee & { department?: { id: string; name: string; code: string } | null },
+    any
+  >[] = [
+    columnHelper.accessor('pay_no', { header: 'Pay No', cell: (i) => i.getValue() ?? '—' }),
+    columnHelper.accessor((r) => `${r.first_name} ${r.last_name}`, {
+      id: 'name',
+      header: 'Name',
+      cell: (info) => info.getValue(),
+    }),
+    columnHelper.accessor('employee_code', { header: 'Code' }),
+    columnHelper.accessor('identity_no', { header: 'Identity No', cell: (i) => i.getValue() ?? '—' }),
+    columnHelper.accessor('email', { header: 'Email' }),
+    columnHelper.accessor('phone', { header: 'Phone', cell: (i) => i.getValue() ?? '—' }),
+    columnHelper.accessor('emergency_contact', {
+      header: 'Emergency Contact',
+      cell: (i) => i.getValue() ?? '—',
+    }),
+    columnHelper.accessor('date_of_birth', {
+      header: 'Date of Birth',
+      cell: (i) => (i.getValue() ? formatDate(i.getValue() as string) : '—'),
+    }),
+    columnHelper.accessor('address', {
+      header: 'Address',
+      cell: (i) =>
+        i.getValue() ? <span className="block max-w-[18rem] truncate">{i.getValue()}</span> : '—',
+    }),
+    columnHelper.accessor((r) => r.department?.name ?? '—', {
+      id: 'department',
+      header: 'Department',
+    }),
+    columnHelper.accessor('office', { header: 'Office', cell: (i) => i.getValue() ?? '—' }),
+    columnHelper.accessor('position', { header: 'Position' }),
+    columnHelper.accessor('supervisor', { header: 'Supervisor', cell: (i) => i.getValue() ?? '—' }),
+    columnHelper.accessor('salary', {
+      header: 'Salary',
+      cell: (info) => formatCurrency(info.getValue()),
+    }),
+    columnHelper.accessor('employment_date', {
+      header: 'Starting date',
+      cell: (info) => formatDate(info.getValue() as string),
+    }),
+    columnHelper.accessor('ending_date', {
+      header: 'Ending date',
+      cell: (info) => (info.getValue() ? formatDate(info.getValue() as string) : '—'),
+    }),
+    columnHelper.accessor('annual_score', {
+      header: 'Annual',
+      cell: (i) => (i.getValue() ?? 0) as any,
+    }),
+    columnHelper.accessor('sick_score', {
+      header: 'Sick',
+      cell: (i) => (i.getValue() ?? 0) as any,
+    }),
+    columnHelper.accessor('competence_score', {
+      header: 'Competence',
+      cell: (i) => (i.getValue() ?? 0) as any,
+    }),
+    columnHelper.accessor('status', {
+      header: 'Status',
+>>>>>>> ed09a8c8d317c37da0c13002591a04ddc6231cd2
       cell: (info) => (
         <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded text-muted-foreground">
           {info.getValue()}
@@ -166,11 +239,62 @@ export function EmployeesTable({ employees }: EmployeesTableProps) {
               Edit
             </DropdownMenuItem>
             <DropdownMenuItem
+<<<<<<< HEAD
               className="text-destructive rounded-lg"
+=======
+              onClick={async () => {
+                const current = row.original.status;
+                const next = current === 'active' ? 'inactive' : 'active';
+                const msg =
+                  next === 'inactive' ? 'Disable this employee?' : 'Enable this employee?';
+                if (!confirm(msg)) return;
+                const supabase = createClient();
+                const { error } = await supabase
+                  .from('employees')
+                  .update({ status: next })
+                  .eq('id', row.original.id);
+                if (error) {
+                  toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                  return;
+                }
+                toast({ title: 'Success', description: `Employee ${next}.` });
+                router.refresh();
+              }}
+            >
+              <Ban className="mr-2 h-4 w-4" />
+              {row.original.status === 'active' ? 'Disable' : 'Enable'}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={async () => {
+                if (!confirm('Reset annual/sick/competence scores to 0?')) return;
+                const supabase = createClient();
+                const { error } = await supabase
+                  .from('employees')
+                  .update({ annual_score: 0, sick_score: 0, competence_score: 0 })
+                  .eq('id', row.original.id);
+                if (error) {
+                  toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                  return;
+                }
+                toast({ title: 'Success', description: 'Scores reset.' });
+                router.refresh();
+              }}
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Reset
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive"
+>>>>>>> ed09a8c8d317c37da0c13002591a04ddc6231cd2
               onClick={async () => {
                 if (!confirm('Delete this employee?')) return;
                 const supabase = createClient();
-                await supabase.from('employees').delete().eq('id', row.original.id);
+                const { error } = await supabase.from('employees').delete().eq('id', row.original.id);
+                if (error) {
+                  toast({ title: 'Error', description: error.message, variant: 'destructive' });
+                  return;
+                }
+                toast({ title: 'Deleted', description: 'Employee removed.' });
                 router.refresh();
               }}
             >
@@ -198,6 +322,7 @@ export function EmployeesTable({ employees }: EmployeesTableProps) {
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+<<<<<<< HEAD
         <div className="space-y-1">
           <h2 className="text-lg font-semibold tracking-tight">Employee Directory</h2>
           <p className="text-sm text-muted-foreground">
@@ -234,6 +359,14 @@ export function EmployeesTable({ employees }: EmployeesTableProps) {
             />
           </div>
         </div>
+=======
+        <Input
+          placeholder="Search employees..."
+          value={globalFilter}
+          onChange={(e) => setGlobalFilter(e.target.value)}
+          className="max-w-sm w-full sm:w-auto"
+        />
+>>>>>>> ed09a8c8d317c37da0c13002591a04ddc6231cd2
       </div>
 
       {/* Table */}
@@ -340,7 +473,11 @@ export function EmployeesTable({ employees }: EmployeesTableProps) {
 
       {/* Edit Dialog */}
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+<<<<<<< HEAD
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+=======
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+>>>>>>> ed09a8c8d317c37da0c13002591a04ddc6231cd2
           <DialogHeader>
             <DialogTitle>Edit Employee</DialogTitle>
             <DialogDescription>
@@ -353,15 +490,32 @@ export function EmployeesTable({ employees }: EmployeesTableProps) {
               initial={{
                 id: editing.id,
                 employee_code: editing.employee_code,
+                pay_no: editing.pay_no ?? undefined,
                 first_name: editing.first_name,
                 last_name: editing.last_name,
+                identity_no: editing.identity_no ?? undefined,
                 email: editing.email,
                 phone: editing.phone ?? undefined,
+<<<<<<< HEAD
+=======
+                father_name: editing.father_name ?? undefined,
+                mother_name: editing.mother_name ?? undefined,
+                date_of_birth: editing.date_of_birth ?? undefined,
+                address: editing.address ?? undefined,
+                emergency_contact: editing.emergency_contact ?? undefined,
+                department_id: editing.department_id ?? undefined,
+>>>>>>> ed09a8c8d317c37da0c13002591a04ddc6231cd2
                 position: editing.position,
                 office: editing.office ?? undefined,
                 supervisor_id: editing.supervisor_id ?? undefined,
                 salary: Number(editing.salary),
                 employment_date: editing.employment_date,
+                ending_date: editing.ending_date ?? undefined,
+                supervisor: editing.supervisor ?? undefined,
+                office: editing.office ?? undefined,
+                annual_score: editing.annual_score ?? 0,
+                sick_score: editing.sick_score ?? 0,
+                competence_score: editing.competence_score ?? 0,
                 status: editing.status,
               }}
               onSuccess={() => {

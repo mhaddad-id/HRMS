@@ -12,6 +12,13 @@ export function formatCurrency(amount: number | string) {
   }).format(Number(amount));
 }
 
+export function formatMoney(amount: number | string, currency: string = 'USD') {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+  }).format(Number(amount));
+}
+
 export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions) {
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
