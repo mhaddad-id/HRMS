@@ -3,14 +3,7 @@ export type EmployeeStatus = 'active' | 'inactive';
 export type LeaveType = 'annual' | 'sick' | 'unpaid' | 'other';
 export type LeaveStatus = 'pending' | 'approved' | 'rejected';
 
-export interface Department {
-  id: string;
-  name: string;
-  code: string;
-  description: string | null;
-  created_at: string;
-  updated_at: string;
-}
+
 
 export interface User {
   id: string;
@@ -25,7 +18,6 @@ export interface User {
 export interface Employee {
   id: string;
   user_id: string | null;
-  department_id: string | null;
   employee_code: string;
   first_name: string;
   last_name: string;
@@ -35,10 +27,12 @@ export interface Employee {
   salary: number;
   employment_date: string;
   status: EmployeeStatus;
+  office: string | null;
+  supervisor_id: string | null;
   profile_photo_url: string | null;
   created_at: string;
   updated_at: string;
-  department?: Department | null;
+  supervisor?: Pick<Employee, 'id' | 'first_name' | 'last_name'> | null;
 }
 
 export interface Leave {

@@ -5,7 +5,7 @@ export default async function PayrollPage() {
   const supabase = await createClient();
   const { data: payrolls } = await supabase
     .from('payroll')
-    .select('*, employee:employees(id, first_name, last_name, employee_code)')
+    .select('*, employee:employees(id, first_name, last_name, employee_code, office)')
     .order('period_start', { ascending: false });
 
   return (

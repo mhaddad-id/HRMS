@@ -8,30 +8,34 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { EmployeeForm } from './employee-form';
-import type { Department } from '@/lib/database.types';
+import type { Employee } from '@/lib/database.types';
 
 interface AddEmployeeButtonProps {
-  departments: Pick<Department, 'id' | 'name' | 'code'>[];
+  employees: Pick<Employee, 'id' | 'first_name' | 'last_name'>[];
 }
 
-export function AddEmployeeButton({ departments }: AddEmployeeButtonProps) {
+export function AddEmployeeButton({ employees }: AddEmployeeButtonProps) {
   const [open, setOpen] = useState(false);
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button className="gap-2 shadow-sm">
+          <Plus className="h-4 w-4" />
           Add Employee
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Employee</DialogTitle>
+          <DialogDescription>
+            Enter the details of the new employee below.
+          </DialogDescription>
         </DialogHeader>
-        <EmployeeForm departments={departments} onSuccess={() => setOpen(false)} />
+        <EmployeeForm employees={employees} onSuccess={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
   );

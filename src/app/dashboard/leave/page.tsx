@@ -16,7 +16,7 @@ export default async function LeavePage() {
 
   const query = supabase
     .from('leaves')
-    .select('*, employee:employees(id, first_name, last_name, employee_code)')
+    .select('*, employee:employees(id, first_name, last_name, employee_code, office)')
     .order('created_at', { ascending: false });
 
   if (!isHR && myEmployee) {

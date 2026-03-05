@@ -18,6 +18,7 @@ import {
   ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
+  User,
 } from 'lucide-react';
 import { signOut } from '@/app/actions/auth';
 import { Button } from '@/components/ui/button';
@@ -219,21 +220,13 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
               side={sidebarOpen ? 'top' : 'right'}
               className="w-60 p-2 rounded-xl border border-border/50 shadow-xl shadow-primary/5"
             >
-              <div className="p-2 mb-2">
-                <p className="text-sm font-semibold">{user.full_name || 'User'}</p>
-                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                <span className={cn('mt-1.5 inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-md capitalize', roleBadge)}>
-                  {roleLabel}
-                </span>
-              </div>
-              <DropdownMenuSeparator className="bg-border/60" />
-              <DropdownMenuItem
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                className="cursor-pointer rounded-lg mt-1"
-              >
-                {theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
-                Theme: {theme === 'dark' ? 'Light' : 'Dark'}
+              <DropdownMenuItem asChild className="cursor-pointer rounded-lg">
+                <Link href="/dashboard/profile" className="flex w-full items-center">
+                  <User className="mr-2 h-4 w-4" />
+                  Profile
+                </Link>
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem
                 asChild
                 className="cursor-pointer text-destructive focus:bg-destructive focus:text-destructive-foreground rounded-lg"
@@ -324,6 +317,12 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
                   <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                 </div>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild className="cursor-pointer rounded-lg">
+                  <Link href="/dashboard/profile" className="flex w-full items-center">
+                    <User className="mr-2 h-4 w-4" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                   className="cursor-pointer rounded-lg"

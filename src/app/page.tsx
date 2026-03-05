@@ -45,7 +45,7 @@ export default function HomePage() {
             </h1>
 
             <p className="text-xl text-muted-foreground max-w-2xl leading-relaxed">
-              Empower your HR department with an all-in-one system for employee records, leave requests, timesheets, and payroll management.
+              Empower your HR operations with an all-in-one system for employee records, leave requests, timesheets, and payroll management.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
@@ -75,7 +75,7 @@ export default function HomePage() {
               <FeatureCard
                 icon={<Briefcase className="w-6 h-6 text-primary" />}
                 title="Employee Directory"
-                description="Securely store and manage employee records, roles, and department structures in one place."
+                description="Securely store and manage employee records and roles in one place."
               />
               <FeatureCard
                 icon={<Calendar className="w-6 h-6 text-primary" />}

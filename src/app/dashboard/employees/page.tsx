@@ -6,10 +6,8 @@ export default async function EmployeesPage() {
   const supabase = await createClient();
   const { data: employees } = await supabase
     .from('employees')
-    .select('*, department:departments(id, name, code)')
+    .select('*, supervisor:employees!supervisor_id(id, first_name, last_name)')
     .order('created_at', { ascending: false });
-
-  const { data: departments } = await supabase.from('departments').select('id, name, code').order('name');
 
   return (
     <div className="space-y-6">
@@ -18,9 +16,9 @@ export default async function EmployeesPage() {
           <h1 className="text-3xl font-bold">Employees</h1>
           <p className="text-muted-foreground">Manage employee records</p>
         </div>
-        <AddEmployeeButton departments={departments ?? []} />
+        <AddEmployeeButton employees={employees ?? []} />
       </div>
-      <EmployeesTable employees={employees ?? []} departments={departments ?? []} />
+      <EmployeesTable employees={employees ?? []} />
     </div>
   );
 }
