@@ -5,7 +5,7 @@ export default async function PerformancePage() {
   const supabase = await createClient();
   const { data: reviews } = await supabase
     .from('performance_reviews')
-    .select('*, employee:employees(id, first_name, last_name)')
+    .select('*, employee:employees(id, first_name, last_name, office:offices(name))')
     .order('review_period_end', { ascending: false });
 
   return (

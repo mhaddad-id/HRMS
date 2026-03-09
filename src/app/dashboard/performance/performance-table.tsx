@@ -8,7 +8,7 @@ interface ReviewRow {
   review_period_end: string;
   score: number;
   notes: string | null;
-  employee?: { first_name: string; last_name: string } | null;
+  employee?: { first_name: string; last_name: string; office: { name: string } | null } | null;
 }
 
 export function PerformanceTable({ reviews }: { reviews: ReviewRow[] }) {
@@ -18,6 +18,7 @@ export function PerformanceTable({ reviews }: { reviews: ReviewRow[] }) {
         <thead>
           <tr className="border-b bg-muted/50">
             <th className="px-4 py-3 text-left font-medium">Employee</th>
+            <th className="px-4 py-3 text-left font-medium">Office</th>
             <th className="px-4 py-3 text-left font-medium">Period</th>
             <th className="px-4 py-3 text-left font-medium">Score</th>
             <th className="px-4 py-3 text-left font-medium">Notes</th>
@@ -28,6 +29,9 @@ export function PerformanceTable({ reviews }: { reviews: ReviewRow[] }) {
             <tr key={r.id} className="border-b hover:bg-muted/30">
               <td className="px-4 py-3">
                 {r.employee ? `${r.employee.first_name} ${r.employee.last_name}` : '—'}
+              </td>
+              <td className="px-4 py-3">
+                {r.employee?.office?.name ?? '—'}
               </td>
               <td className="px-4 py-3">
                 {formatDate(r.review_period_start)} – {formatDate(r.review_period_end)}

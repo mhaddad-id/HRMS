@@ -6,10 +6,11 @@ export default async function MeetingsPage() {
   const supabase = await createClient();
   const { data: meetings } = await supabase
     .from('meetings')
-    .select('*')
+    .select('*, office:offices(name)')
     .gte('scheduled_at', new Date().toISOString())
     .order('scheduled_at');
 
+  const { data: offices } = await supabase.from('offices').select('id, name').order('name');
   const { data: users } = await supabase.from('users').select('id, full_name, email');
 
   return (
@@ -21,7 +22,7 @@ export default async function MeetingsPage() {
         </div>
         <CreateMeetingButton users={users ?? []} />
       </div>
-      <MeetingsList meetings={meetings ?? []} />
+      <MeetingsList meetings={meetings ?? []} offices={offices ?? []} />
     </div>
   );
 }

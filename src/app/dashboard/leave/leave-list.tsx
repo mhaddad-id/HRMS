@@ -31,7 +31,13 @@ interface LeaveRow {
   end_date: string;
   reason: string | null;
   status: string;
-  employee?: { id: string; first_name: string; last_name: string; employee_code: string; office: string | null } | null;
+  employee?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    employee_code: string;
+    office: { id: string; name: string } | null;
+  } | null;
 }
 
 const columnHelper = createColumnHelper<LeaveRow>();
@@ -39,16 +45,17 @@ const columnHelper = createColumnHelper<LeaveRow>();
 export function LeaveList({
   leaves,
   isHR,
+  canApprove,
+  requiresOfficeSelection,
 }: {
   leaves: LeaveRow[];
   isHR: boolean;
+  canApprove: boolean;
+  requiresOfficeSelection?: boolean;
 }) {
   const router = useRouter();
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState<{ id: string; value: any }[]>([]);
-
-  // Get unique offices for filter
-  const offices = Array.from(new Set(leaves.map(l => l.employee?.office).filter(Boolean))).sort();
 
   async function updateStatus(leaveId: string, status: 'approved' | 'rejected') {
     const supabase = createClient();
@@ -76,7 +83,7 @@ export function LeaveList({
           </div>
         ),
       }),
-      columnHelper.accessor((r) => r.employee?.office ?? '—', {
+      columnHelper.accessor((r) => r.employee?.office?.name ?? '—', {
         id: 'office',
         header: 'Office',
         cell: (info) => <span className="text-sm">{info.getValue()}</span>,
@@ -115,7 +122,7 @@ export function LeaveList({
         </span>
       ),
     }),
-    ...(isHR ? [
+    ...(canApprove ? [
       columnHelper.display({
         id: 'actions',
         header: 'Actions',
@@ -148,26 +155,7 @@ export function LeaveList({
     <div className="space-y-4">
       {isHR && (
         <div className="flex items-center gap-2">
-          <Select
-            value={(table.getColumn('office')?.getFilterValue() as string) ?? 'all'}
-            onValueChange={(value) =>
-              table.getColumn('office')?.setFilterValue(value === 'all' ? undefined : value)
-            }
-          >
-            <SelectTrigger className="w-full sm:w-[180px] h-9">
-              <SelectValue placeholder="All Offices" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Offices</SelectItem>
-              {offices.map((office) => (
-                <SelectItem key={office} value={office!}>
-                  {office}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div className="relative w-72">
+          <div className="relative w-[300px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search employees..."
@@ -205,7 +193,11 @@ export function LeaveList({
           </tbody>
         </table>
         {table.getRowModel().rows.length === 0 && (
-          <div className="p-8 text-center text-muted-foreground">No leave records found.</div>
+          <div className="p-8 text-center text-muted-foreground">
+            {requiresOfficeSelection
+              ? "Please select an office to view leave records."
+              : "No leave records found."}
+          </div>
         )}
       </div>
     </div>

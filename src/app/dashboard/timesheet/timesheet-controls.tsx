@@ -18,14 +18,23 @@ export interface TimesheetEmployeeOption {
   status?: 'active' | 'inactive' | string | null;
 }
 
+export interface TimesheetOfficeOption {
+  office_id: string;
+  name: string;
+}
+
 export function TimesheetControls({
   month,
   employeeId,
+  officeId,
+  offices,
   employees,
   status,
 }: {
   month: string; // YYYY-MM
   employeeId?: string;
+  officeId?: string;
+  offices?: TimesheetOfficeOption[];
   employees: TimesheetEmployeeOption[];
   status?: string | null;
 }) {
@@ -34,10 +43,16 @@ export function TimesheetControls({
   const sp = useSearchParams();
 
   const canPickEmployee = employees.length > 1;
+  const showOffices = offices && offices.length > 1;
 
   const setParams = (next: Record<string, string | undefined>) => {
     const params = new URLSearchParams(sp.toString());
     Object.entries(next).forEach(([k, v]) => {
+      // If we change the office, we should clear the employee selection
+      // so it doesn't get stuck on an employee not in the new office
+      if (k === 'office' && params.get('office') !== v) {
+        params.delete('employee');
+      }
       if (!v) params.delete(k);
       else params.set(k, v);
     });
@@ -51,7 +66,7 @@ export function TimesheetControls({
 
   return (
     <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between print:hidden">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-1">
           <div className="text-xs font-medium text-muted-foreground">Month</div>
           <Input
@@ -61,6 +76,28 @@ export function TimesheetControls({
             className="w-[11rem]"
           />
         </div>
+
+        {showOffices && (
+          <div className="space-y-1">
+            <div className="text-xs font-medium text-muted-foreground">Office</div>
+            <Select
+              value={officeId ?? 'all'}
+              onValueChange={(v) => setParams({ office: v === 'all' ? undefined : v })}
+            >
+              <SelectTrigger className="w-[14rem]">
+                <SelectValue placeholder="All Offices" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Offices</SelectItem>
+                {offices.map((o) => (
+                  <SelectItem key={o.office_id} value={o.office_id}>
+                    {o.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <div className="space-y-1">
           <div className="text-xs font-medium text-muted-foreground">Employee</div>
@@ -82,10 +119,6 @@ export function TimesheetControls({
           </Select>
         </div>
 
-        <div className="space-y-1">
-          <div className="text-xs font-medium text-muted-foreground">Status</div>
-          <Input value={status ?? selected?.status ?? '—'} disabled className="w-[11rem]" />
-        </div>
       </div>
 
       <div className="flex gap-2">

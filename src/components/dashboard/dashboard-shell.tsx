@@ -19,6 +19,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   User,
+  Building,
 } from 'lucide-react';
 import { signOut } from '@/app/actions/auth';
 import { Button } from '@/components/ui/button';
@@ -50,9 +51,10 @@ const navItems: { href: string; label: string; icon: React.ElementType; roles?: 
   { href: '/dashboard/admin/users', label: 'Users', icon: Users, roles: ['admin'] },
   { href: '/dashboard/employees', label: 'Employees', icon: Users, roles: ['admin', 'hr_manager'] },
   { href: '/dashboard/leave', label: 'Leave', icon: Calendar },
-  { href: '/dashboard/payroll', label: 'Payroll', icon: DollarSign },
+  { href: '/dashboard/payroll', label: 'Payroll', icon: DollarSign, roles: ['admin', 'hr_manager'] },
   { href: '/dashboard/performance', label: 'Performance', icon: ClipboardList, roles: ['admin', 'hr_manager'] },
   { href: '/dashboard/timesheet', label: 'Timesheet', icon: Clock },
+  { href: '/dashboard/offices', label: 'Offices', icon: Building, roles: ['admin', 'hr_manager'] },
   { href: '/dashboard/meetings', label: 'Meetings', icon: CalendarDays },
   { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
 ];

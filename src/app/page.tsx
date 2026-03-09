@@ -15,11 +15,8 @@ export default function HomePage() {
           <span className="text-xl font-bold tracking-tight text-foreground">HRMS Core</span>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="ghost" className="hidden sm:flex" asChild>
-            <Link href="/login">Sign in</Link>
-          </Button>
           <Button asChild className="rounded-full px-6 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow">
-            <Link href="/register">Get Started</Link>
+            <Link href="/login">Sign in</Link>
           </Button>
         </div>
       </header>
@@ -50,12 +47,9 @@ export default function HomePage() {
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Button size="lg" className="rounded-full px-8 shadow-xl shadow-primary/20 gap-2 font-semibold text-lg" asChild>
-                <Link href="/register">
-                  Start for free <ArrowRight className="w-5 h-5" />
+                <Link href="/login">
+                  Sign in to workspace <ArrowRight className="w-5 h-5" />
                 </Link>
-              </Button>
-              <Button size="lg" variant="outline" className="rounded-full px-8 font-semibold text-lg" asChild>
-                <Link href="/login">Sign in to workspace</Link>
               </Button>
             </div>
           </div>

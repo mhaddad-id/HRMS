@@ -10,8 +10,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, User as UserIcon } from 'lucide-react';
+import { Building2, Search, User as UserIcon } from 'lucide-react';
 
 type UserWithEmployee = User & {
     employee?: {
@@ -60,6 +61,20 @@ function UserAvatar({ name, email }: { name?: string | null; email: string }) {
 export function UsersTable({ users }: UsersTableProps) {
     const { toast } = useToast();
     const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredUsers = users.filter((user) => {
+        const query = searchQuery.toLowerCase();
+        const fullName = (user.full_name || '').toLowerCase();
+        const email = (user.email || '').toLowerCase();
+        const empFirstName = (user.employee?.first_name || '').toLowerCase();
+        const empLastName = (user.employee?.last_name || '').toLowerCase();
+
+        return fullName.includes(query) ||
+            email.includes(query) ||
+            empFirstName.includes(query) ||
+            empLastName.includes(query);
+    });
 
     const getFallbackNameParts = (user: User) => {
         const directFirst = user.first_name ?? '';
@@ -109,13 +124,23 @@ export function UsersTable({ users }: UsersTableProps) {
     }
 
     return (
-<<<<<<< HEAD
         <div className="space-y-4">
-            <div className="space-y-1">
-                <h2 className="text-lg font-semibold tracking-tight">All Users</h2>
-                <p className="text-sm text-muted-foreground">
-                    {users.length} user{users.length !== 1 ? 's' : ''} in the system
-                </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                    <h2 className="text-lg font-semibold tracking-tight">All Users</h2>
+                    <p className="text-sm text-muted-foreground">
+                        {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''} found
+                    </p>
+                </div>
+                <div className="relative w-full sm:w-auto">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                    <Input
+                        placeholder="Search users..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 h-9 max-w-sm w-full sm:w-[240px]"
+                    />
+                </div>
             </div>
 
             <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
@@ -134,7 +159,7 @@ export function UsersTable({ users }: UsersTableProps) {
                             </tr>
                         </thead>
                         <tbody>
-                            {users.map((user) => {
+                            {filteredUsers.map((user) => {
                                 const emp = user.employee;
                                 const supervisorName = emp?.supervisor
                                     ? `${emp.supervisor.first_name} ${emp.supervisor.last_name}`
@@ -220,60 +245,6 @@ export function UsersTable({ users }: UsersTableProps) {
                     </table>
                 </div>
             </div>
-=======
-        <div className="rounded-md border overflow-x-auto">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>First Name</TableHead>
-                        <TableHead>Last Name</TableHead>
-                        <TableHead>Supervisor</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Role</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {users.map((user) => (
-                        (() => {
-                            const fallback = getFallbackNameParts(user);
-                            const firstName = user.first_name ?? fallback.first;
-                            const lastName = user.last_name ?? fallback.last;
-                            return (
-                        <TableRow key={user.id}>
-                            <TableCell className="whitespace-nowrap">{firstName || '—'}</TableCell>
-                            <TableCell className="whitespace-nowrap">{lastName || '—'}</TableCell>
-                            <TableCell className="whitespace-nowrap">{user.supervisor ?? '—'}</TableCell>
-                            <TableCell className="whitespace-nowrap">{user.email}</TableCell>
-                            <TableCell>
-                                <Select
-                                    disabled={loadingIds.has(user.id)}
-                                    value={user.role}
-                                    onValueChange={(val) => handleRoleChange(user.id, val)}
-                                >
-                                    <SelectTrigger className="w-[180px]">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="admin">Admin</SelectItem>
-                                        <SelectItem value="hr_manager">HR Manager</SelectItem>
-                                        <SelectItem value="employee">Employee</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </TableCell>
-                        </TableRow>
-                            );
-                        })()
-                    ))}
-                    {users.length === 0 && (
-                        <TableRow>
-                            <TableCell colSpan={5} className="text-center py-4">
-                                No users found.
-                            </TableCell>
-                        </TableRow>
-                    )}
-                </TableBody>
-            </Table>
->>>>>>> ed09a8c8d317c37da0c13002591a04ddc6231cd2
         </div>
     );
 }

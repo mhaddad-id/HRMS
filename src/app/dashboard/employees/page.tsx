@@ -6,8 +6,13 @@ export default async function EmployeesPage() {
   const supabase = await createClient();
   const { data: employees } = await supabase
     .from('employees')
-    .select('*, supervisor:employees!supervisor_id(id, first_name, last_name)')
+    .select('*, supervisor:employees!supervisor_id(id, first_name, last_name), office:offices(id, name)')
     .order('created_at', { ascending: false });
+
+  const { data: offices } = await supabase
+    .from('offices')
+    .select('id, name')
+    .order('name');
 
   return (
     <div className="space-y-6">
@@ -18,7 +23,7 @@ export default async function EmployeesPage() {
         </div>
         <AddEmployeeButton employees={employees ?? []} />
       </div>
-      <EmployeesTable employees={employees ?? []} />
+      <EmployeesTable employees={employees ?? []} allOffices={offices ?? []} />
     </div>
   );
 }

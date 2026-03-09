@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { employeeSchema, type EmployeeFormValues } from '@/lib/validations/employee';
 import { createClient } from '@/lib/supabase/client';
+import { createEmployee } from '@/app/actions/employees';
 import type { Employee } from '@/lib/database.types';
 
 interface EmployeeFormProps {
@@ -29,35 +30,40 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [offices, setOffices] = useState<{ id: string; name: string }[]>([]);
   const isEdit = !!initial?.id;
+
+  useEffect(() => {
+    async function fetchOffices() {
+      const supabase = createClient();
+      const { data } = await supabase.from('offices').select('id, name').order('name');
+      if (data) setOffices(data);
+    }
+    fetchOffices();
+  }, []);
 
   const form = useForm<EmployeeFormValues>({
     resolver: zodResolver(employeeSchema),
     defaultValues: {
-      employee_code: initial?.employee_code ?? '',
-      pay_no: initial?.pay_no ?? '',
+      password: '',
       first_name: initial?.first_name ?? '',
       last_name: initial?.last_name ?? '',
       identity_no: initial?.identity_no ?? '',
       email: initial?.email ?? '',
       phone: initial?.phone ?? '',
-<<<<<<< HEAD
-=======
       father_name: initial?.father_name ?? '',
       mother_name: initial?.mother_name ?? '',
       date_of_birth: initial?.date_of_birth ?? '',
       address: initial?.address ?? '',
       emergency_contact: initial?.emergency_contact ?? '',
-      department_id: initial?.department_id ?? null,
->>>>>>> ed09a8c8d317c37da0c13002591a04ddc6231cd2
       position: initial?.position ?? '',
       office: initial?.office ?? '',
+      office_id: initial?.office_id ?? null,
       supervisor_id: initial?.supervisor_id ?? null,
       salary: initial?.salary ?? 0,
       employment_date: initial?.employment_date ?? new Date().toISOString().slice(0, 10),
       ending_date: initial?.ending_date ?? '',
       supervisor: initial?.supervisor ?? '',
-      office: initial?.office ?? '',
       annual_score: initial?.annual_score ?? 0,
       sick_score: initial?.sick_score ?? 0,
       competence_score: initial?.competence_score ?? 0,
@@ -68,43 +74,49 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
   async function onSubmit(values: EmployeeFormValues) {
     setLoading(true);
     setError(null);
-    const supabase = createClient();
-    const payload = {
-      employee_code: values.employee_code,
-      pay_no: values.pay_no?.trim() ? values.pay_no.trim() : null,
-      first_name: values.first_name,
-      last_name: values.last_name,
-      identity_no: values.identity_no?.trim() ? values.identity_no.trim() : null,
-      email: values.email,
-      phone: values.phone || null,
-<<<<<<< HEAD
-=======
-      father_name: values.father_name?.trim() ? values.father_name.trim() : null,
-      mother_name: values.mother_name?.trim() ? values.mother_name.trim() : null,
-      date_of_birth: values.date_of_birth || null,
-      address: values.address?.trim() ? values.address.trim() : null,
-      emergency_contact: values.emergency_contact?.trim() ? values.emergency_contact.trim() : null,
-      department_id: values.department_id || null,
->>>>>>> ed09a8c8d317c37da0c13002591a04ddc6231cd2
-      position: values.position,
-      office: values.office || null,
-      supervisor_id: values.supervisor_id || null,
-      salary: values.salary,
-      employment_date: values.employment_date,
-      ending_date: values.ending_date || null,
-      supervisor: values.supervisor?.trim() ? values.supervisor.trim() : null,
-      office: values.office?.trim() ? values.office.trim() : null,
-      annual_score: values.annual_score ?? 0,
-      sick_score: values.sick_score ?? 0,
-      competence_score: values.competence_score ?? 0,
-      status: values.status,
-    };
+
     if (isEdit) {
+      const supabase = createClient();
+      const payload = {
+        first_name: values.first_name,
+        last_name: values.last_name,
+        identity_no: values.identity_no?.trim() ? values.identity_no.trim() : null,
+        email: values.email,
+        phone: values.phone || null,
+        father_name: values.father_name?.trim() ? values.father_name.trim() : null,
+        mother_name: values.mother_name?.trim() ? values.mother_name.trim() : null,
+        date_of_birth: values.date_of_birth || null,
+        address: values.address?.trim() ? values.address.trim() : null,
+        emergency_contact: values.emergency_contact?.trim() ? values.emergency_contact.trim() : null,
+        position: values.position,
+        office: values.office || null,
+        office_id: values.office_id || null,
+        supervisor_id: values.supervisor_id || null,
+        salary: values.salary,
+        employment_date: values.employment_date,
+        ending_date: values.ending_date || null,
+        supervisor: values.supervisor?.trim() ? values.supervisor.trim() : null,
+        annual_score: values.annual_score ?? 0,
+        sick_score: values.sick_score ?? 0,
+        competence_score: values.competence_score ?? 0,
+        status: values.status,
+      };
+
       const { error: e } = await supabase.from('employees').update(payload).eq('id', initial!.id);
       if (e) { setError(e.message); setLoading(false); return; }
     } else {
-      const { error: e } = await supabase.from('employees').insert(payload);
-      if (e) { setError(e.message); setLoading(false); return; }
+      const formData = new FormData();
+      Object.entries(values).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== '') {
+          formData.append(key, value.toString());
+        }
+      });
+      const result = await createEmployee(formData);
+      if (result.error) {
+        setError(result.error);
+        setLoading(false);
+        return;
+      }
     }
     setLoading(false);
     router.refresh();
@@ -122,15 +134,22 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Employee Code</Label>
-          <Input {...form.register('employee_code')} disabled={isEdit} placeholder="EMP-001" />
-          {form.formState.errors.employee_code && (
-            <p className="text-sm text-destructive">{form.formState.errors.employee_code.message}</p>
-          )}
+          <Input
+            value={initial?.employee_code || 'Auto-generated (T0xxx)'}
+            disabled
+            readOnly
+            className="bg-muted"
+          />
         </div>
-        <div className="space-y-2">
-          <Label>Pay No</Label>
-          <Input {...form.register('pay_no')} />
-        </div>
+        {!isEdit && (
+          <div className="space-y-2">
+            <Label>Password</Label>
+            <Input type="password" {...form.register('password')} placeholder="Secure password" />
+            {form.formState.errors.password && (
+              <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>
+            )}
+          </div>
+        )}
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
@@ -171,10 +190,6 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
           )}
         </div>
       </div>
-<<<<<<< HEAD
-
-      {/* Email */}
-=======
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Father Name</Label>
@@ -185,61 +200,71 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
           <Input {...form.register('mother_name')} />
         </div>
       </div>
->>>>>>> ed09a8c8d317c37da0c13002591a04ddc6231cd2
-      <div className="space-y-2">
-        <Label>Email</Label>
-        <Input type="email" {...form.register('email')} placeholder="john@company.com" />
-        {form.formState.errors.email && (
-          <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
-        )}
-      </div>
-<<<<<<< HEAD
-
-      {/* Position */}
-      <div className="space-y-2">
-        <Label>Position</Label>
-        <Input {...form.register('position')} placeholder="Software Engineer" />
-        {form.formState.errors.position && (
-          <p className="text-sm text-destructive">{form.formState.errors.position.message}</p>
-        )}
-=======
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Phone Number</Label>
-          <Input {...form.register('phone')} />
+          <Label>Email</Label>
+          <Input type="email" {...form.register('email')} placeholder="john@company.com" />
+          {form.formState.errors.email && (
+            <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+          )}
         </div>
+        <div className="space-y-2">
+          <Label>Phone Number</Label>
+          <Input {...form.register('phone')} placeholder="+1 234 567 890" />
+          {form.formState.errors.phone && (
+            <p className="text-sm text-destructive">{form.formState.errors.phone.message}</p>
+          )}
+        </div>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Emergency Contact</Label>
           <Input {...form.register('emergency_contact')} />
         </div>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Date of Birth</Label>
           <Input type="date" {...form.register('date_of_birth')} />
-        </div>
-        <div className="space-y-2">
-          <Label>Office</Label>
-          <Input {...form.register('office')} />
         </div>
       </div>
       <div className="space-y-2">
         <Label>Address</Label>
         <Textarea {...form.register('address')} />
->>>>>>> ed09a8c8d317c37da0c13002591a04ddc6231cd2
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Phone</Label>
-          <Input {...form.register('phone')} placeholder="+1 555 000 0000" />
+          <Label>Position</Label>
+          <Input {...form.register('position')} placeholder="Software Engineer" />
+          {form.formState.errors.position && (
+            <p className="text-sm text-destructive">{form.formState.errors.position.message}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label>Office</Label>
-          <Input {...form.register('office')} placeholder="e.g. NYC HQ, Floor 3" />
+          <Select
+            value={form.watch('office_id') || 'none'}
+            onValueChange={(v) => {
+              const val = v === 'none' ? null : v;
+              form.setValue('office_id', val);
+              // Also sync the 'office' text field for backward compatibility
+              const officeName = offices.find(o => o.id === val)?.name || '';
+              form.setValue('office', officeName);
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select office" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">None</SelectItem>
+              {offices.map((o) => (
+                <SelectItem key={o.id} value={o.id}>
+                  {o.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
-
 
       {/* Supervisor */}
       <div className="space-y-2">
@@ -265,38 +290,26 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
       {/* Row: Salary + Employment date */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Supervisor</Label>
-          <Input {...form.register('supervisor')} />
-        </div>
-        <div className="space-y-2">
           <Label>Salary</Label>
           <Input
             type="number"
             step="0.01"
-<<<<<<< HEAD
-            {...form.register('salary', { valueAsNumber: true })}
-            placeholder="0.00"
-=======
             {...form.register('salary', { valueAsNumber: true, setValueAs: (v) => (v === '' ? 0 : Number(v)) })}
->>>>>>> ed09a8c8d317c37da0c13002591a04ddc6231cd2
+            placeholder="0.00"
           />
-          {form.formState.errors.salary && (
+          {form.formState.errors.salary?.message && (
             <p className="text-sm text-destructive">{form.formState.errors.salary.message}</p>
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label>Employment Date</Label>
+          <Input type="date" {...form.register('employment_date')} />
+          {form.formState.errors.employment_date?.message && (
+            <p className="text-sm text-destructive">{form.formState.errors.employment_date.message}</p>
           )}
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-<<<<<<< HEAD
-          <Label>Employment Date</Label>
-=======
-          <Label>Starting date</Label>
->>>>>>> ed09a8c8d317c37da0c13002591a04ddc6231cd2
-          <Input type="date" {...form.register('employment_date')} />
-          {form.formState.errors.employment_date && (
-            <p className="text-sm text-destructive">{form.formState.errors.employment_date.message}</p>
-          )}
-        </div>
         <div className="space-y-2">
           <Label>Ending Date</Label>
           <Input type="date" {...form.register('ending_date')} />
@@ -343,6 +356,6 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
           {loading ? 'Saving…' : isEdit ? 'Update Employee' : 'Add Employee'}
         </Button>
       </div>
-    </form>
+    </form >
   );
 }

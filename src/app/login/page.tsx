@@ -37,14 +37,6 @@ export default function LoginPage({
           <LoginMessages error={error} message={message} />
           <SignInForm />
         </CardContent>
-        <CardFooter className="flex justify-center border-t border-border/40 pt-6 pb-6">
-          <p className="text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{' '}
-            <Link href="/register" className="font-semibold text-primary hover:text-primary/80 transition-colors">
-              Request access
-            </Link>
-          </p>
-        </CardFooter>
       </Card>
     </div>
   );

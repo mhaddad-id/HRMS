@@ -23,13 +23,14 @@ export function TimesheetReport({
 }: {
   month: string; // YYYY-MM
   employee: {
-    pay_no?: string | null;
+    employee_code?: string | null;
     first_name: string;
     last_name: string;
     position?: string | null;
     office?: string | null;
     supervisor?: string | null;
     status?: string | null;
+    ending_date?: string | null;
   };
   timesheets: TimesheetEntry[];
   leaves: LeaveEntry[];
@@ -63,6 +64,15 @@ export function TimesheetReport({
     return `${hh}:${mm}`;
   };
 
+  const isAfterEndingDate = (d: Date) => {
+    if (!employee.ending_date) return false;
+    const endDt = new Date(employee.ending_date);
+    // Compare dates only
+    const day = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+    const endDay = new Date(Date.UTC(endDt.getUTCFullYear(), endDt.getUTCMonth(), endDt.getUTCDate()));
+    return day > endDay;
+  };
+
   const hoursToHHMM = (hours: number) => {
     const total = Math.round(hours * 60);
     const hh = String(Math.floor(total / 60)).padStart(2, '0');
@@ -84,6 +94,7 @@ export function TimesheetReport({
   });
 
   const sumWorkedMinutes = days.reduce((acc, d) => {
+    if (isAfterEndingDate(d)) return acc;
     const t = timesheetByDate.get(keyOf(d));
     if (!t) return acc;
     const mins = Math.round((Number(t.regular_hours) + Number(t.overtime_hours)) * 60);
@@ -102,11 +113,17 @@ export function TimesheetReport({
       { key: 'absence', label: 'Absence' },
     ];
 
-  const cellClass = (d: Date) =>
-    `border border-border/80 px-2 py-2 text-center text-[11px] leading-none ${isWeekend(d) ? 'bg-yellow-200/70' : 'bg-background'}`;
+  const cellClass = (d: Date) => {
+    const gray = isAfterEndingDate(d);
+    const weekend = isWeekend(d);
+    return `border border-border/80 px-2 py-2 text-center text-[11px] leading-none ${gray ? 'bg-zinc-200 text-zinc-400' : weekend ? 'bg-yellow-200/70' : 'bg-background'}`;
+  };
 
-  const headerCellClass = (d: Date) =>
-    `border border-border/80 px-2 py-2 text-center text-[11px] font-semibold ${isWeekend(d) ? 'bg-yellow-200/70' : 'bg-muted/60'}`;
+  const headerCellClass = (d: Date) => {
+    const gray = isAfterEndingDate(d);
+    const weekend = isWeekend(d);
+    return `border border-border/80 px-2 py-2 text-center text-[11px] font-semibold ${gray ? 'bg-zinc-200 text-zinc-400' : weekend ? 'bg-yellow-200/70' : 'bg-muted/60'}`;
+  };
 
   return (
     <div className="print-area">
@@ -130,7 +147,7 @@ export function TimesheetReport({
         <div className="min-w-[1200px] p-3">
           <div className="grid grid-cols-3 gap-2 border border-border/80">
             <div className="p-3 border-r border-border/80">
-              <div className="text-xs font-semibold">Pay No: {employee.pay_no ?? '—'}</div>
+              <div className="text-xs font-semibold">Code: {employee.employee_code ?? '—'}</div>
             </div>
             <div className="p-3 border-r border-border/80 text-center">
               <div className="text-sm font-bold">TIMESHEET</div>
@@ -151,26 +168,30 @@ export function TimesheetReport({
             </div>
             <div className="col-span-4 p-2 text-xs">{employee.position ?? '—'}</div>
 
-            <div className="col-span-2 border-r border-border/80 p-2 text-xs font-semibold bg-muted/50">Month</div>
-            <div className="col-span-4 border-r border-border/80 p-2 text-xs">
-              {formatDate(start, { month: 'short', year: 'numeric' })}
-            </div>
+            <div className="col-span-2 border-r border-border/80 p-2 text-xs font-semibold bg-muted/50">BEG</div>
+            <div className="col-span-4 border-r border-border/80 p-2 text-xs">{formatDate(start)}</div>
+
+
+
             <div className="col-span-2 border-r border-border/80 p-2 text-xs font-semibold bg-muted/50">
               Location
             </div>
             <div className="col-span-4 p-2 text-xs">{employee.office ?? '—'}</div>
 
-            <div className="col-span-2 border-r border-border/80 p-2 text-xs font-semibold bg-muted/50">BEG</div>
-            <div className="col-span-4 border-r border-border/80 p-2 text-xs">{formatDate(start)}</div>
+            <div className="col-span-2 border-r border-border/80 p-2 text-xs font-semibold bg-muted/50">END</div>
+            <div className="col-span-4 border-r border-border/80 p-2 text-xs">{formatDate(end)}</div>
             <div className="col-span-2 border-r border-border/80 p-2 text-xs font-semibold bg-muted/50">
               Supervisor&apos;s Name
             </div>
             <div className="col-span-4 p-2 text-xs">{employee.supervisor ?? '—'}</div>
 
-            <div className="col-span-2 border-r border-border/80 p-2 text-xs font-semibold bg-muted/50">END</div>
-            <div className="col-span-4 border-r border-border/80 p-2 text-xs">{formatDate(end)}</div>
+
             <div className="col-span-2 border-r border-border/80 p-2 text-xs font-semibold bg-muted/50">
               Employee&apos;s Signature
+            </div>
+            <div className="col-span-4 p-2 text-xs">&nbsp;</div>
+            <div className="col-span-2 border-r border-border/80 p-2 text-xs font-semibold bg-muted/50">
+              Supervisor&apos;s Signature
             </div>
             <div className="col-span-4 p-2 text-xs">&nbsp;</div>
           </div>
@@ -215,9 +236,10 @@ export function TimesheetReport({
                   </td>
                   {days.map((d) => {
                     const t = timesheetByDate.get(keyOf(d));
+                    const isEnded = isAfterEndingDate(d);
                     return (
                       <td key={keyOf(d)} className={cellClass(d)}>
-                        {toHHMM(t?.clock_in ?? null)}
+                        {isEnded ? '—' : toHHMM(t?.clock_in ?? null)}
                       </td>
                     );
                   })}
@@ -227,9 +249,10 @@ export function TimesheetReport({
                   <td className="border border-border/80 bg-muted/50 px-2 py-2 text-xs font-semibold">Time-out</td>
                   {days.map((d) => {
                     const t = timesheetByDate.get(keyOf(d));
+                    const isEnded = isAfterEndingDate(d);
                     return (
                       <td key={keyOf(d)} className={cellClass(d)}>
-                        {toHHMM(t?.clock_out ?? null)}
+                        {isEnded ? '—' : toHHMM(t?.clock_out ?? null)}
                       </td>
                     );
                   })}
@@ -241,10 +264,11 @@ export function TimesheetReport({
                   </td>
                   {days.map((d) => {
                     const t = timesheetByDate.get(keyOf(d));
-                    const hrs = t ? Number(t.regular_hours) + Number(t.overtime_hours) : 0;
+                    const isEnded = isAfterEndingDate(d);
+                    const hrs = t && !isEnded ? Number(t.regular_hours) + Number(t.overtime_hours) : 0;
                     return (
                       <td key={keyOf(d)} className={cellClass(d)}>
-                        {hoursToHHMM(hrs)}
+                        {isEnded ? '—' : hoursToHHMM(hrs)}
                       </td>
                     );
                   })}
@@ -263,7 +287,8 @@ export function TimesheetReport({
                   {days.map((d) => {
                     const k = keyOf(d);
                     const typ = leaveTypeByDate.get(k);
-                    const show = typ === leaveRows[0]!.key ? '08:00' : '';
+                    const isEnded = isAfterEndingDate(d);
+                    const show = !isEnded && typ === leaveRows[0]!.key ? '08:00' : isEnded ? '—' : '';
                     return (
                       <td key={k} className={cellClass(d)}>
                         {show}
@@ -281,7 +306,8 @@ export function TimesheetReport({
                     {days.map((d) => {
                       const k = keyOf(d);
                       const typ = leaveTypeByDate.get(k);
-                      const show = typ === row.key ? '08:00' : '';
+                      const isEnded = isAfterEndingDate(d);
+                      const show = !isEnded && typ === row.key ? '08:00' : isEnded ? '—' : '';
                       return (
                         <td key={k} className={cellClass(d)}>
                           {show}
@@ -296,18 +322,23 @@ export function TimesheetReport({
           </div>
 
           <div className="mt-3 grid grid-cols-12 border border-border/80">
-            <div className="col-span-4 border-r border-border/80 p-2 text-xs font-semibold bg-muted/50">
-              Hours Allocation
+            <div className="col-span-8 border-r border-border/80">
+              <div className="p-2 text-xs font-semibold bg-muted/50">
+                Notes
+              </div>
+              <div className="p-6 text-xs min-h-[120px]">
+                &nbsp;
+              </div>
             </div>
-            <div className="col-span-4 border-r border-border/80 p-2 text-xs font-semibold bg-muted/50">
-              Notes
+
+            <div className="col-span-4">
+              <div className="p-2 text-xs font-semibold bg-muted/50">
+                Human Resources Department / Checked and Verified By:
+              </div>
+              <div className="p-6 text-xs min-h-[120px]">
+                &nbsp;
+              </div>
             </div>
-            <div className="col-span-4 p-2 text-xs font-semibold bg-muted/50">
-              Human Resources Department / Checked and Verified By:
-            </div>
-            <div className="col-span-4 border-r border-border/80 p-6 text-xs">&nbsp;</div>
-            <div className="col-span-4 border-r border-border/80 p-6 text-xs">&nbsp;</div>
-            <div className="col-span-4 p-6 text-xs">&nbsp;</div>
           </div>
         </div>
       </div>

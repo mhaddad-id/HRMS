@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@radix-ui/react-dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { ResetPasswordForm } from './reset-password-form';
 
 export default async function ProfilePage() {
     const cookieStore = cookies();
@@ -118,6 +119,13 @@ export default async function ProfilePage() {
                                     <span>Not provided</span>
                                 </div>
                             </div>
+                        </div>
+
+                        <Separator />
+
+                        <div className="space-y-4">
+                            <h3 className="text-sm font-semibold">Change Password</h3>
+                            <ResetPasswordForm />
                         </div>
                     </CardContent>
                 </Card>
