@@ -7,7 +7,7 @@ export default async function AdminUsersPage() {
     // Fetch users with their linked employee record (for name, office, supervisor)
     const { data: users, error } = await supabase
         .from('users')
-        .select('*, employee:employees!user_id(id, first_name, last_name, office, supervisor:employees!supervisor_id(id, first_name, last_name))')
+        .select('*, employee:employees!user_id(id, first_name, last_name, employee_code, position, office, supervisor_record:supervisor_id(id, first_name, last_name))')
         .order('created_at', { ascending: false });
 
     if (error) {

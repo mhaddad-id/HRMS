@@ -95,22 +95,31 @@ export function TimesheetReport({
 
   const sumWorkedMinutes = days.reduce((acc, d) => {
     if (isAfterEndingDate(d)) return acc;
-    const t = timesheetByDate.get(keyOf(d));
-    if (!t) return acc;
-    const mins = Math.round((Number(t.regular_hours) + Number(t.overtime_hours)) * 60);
-    return acc + mins;
+    const k = keyOf(d);
+    const t = timesheetByDate.get(k);
+    const hasLeave = leaveTypeByDate.has(k);
+    const weekend = isWeekend(d);
+
+    let hrs = 0;
+    if (t) {
+      hrs = Number(t.regular_hours) + Number(t.overtime_hours);
+    } else if (!weekend && !hasLeave) {
+      // Default to 8 hours for workdays with no logs and no leave
+      hrs = 8;
+    }
+
+    return acc + Math.round(hrs * 60);
   }, 0);
 
   const totalWorked = `${String(Math.floor(sumWorkedMinutes / 60)).padStart(2, '0')}:${String(sumWorkedMinutes % 60).padStart(2, '0')}`;
 
-  const leaveRows: Array<{ key: LeaveEntry['leave_type'] | 'absence' | 'public_holiday'; label: string }> =
+  const leaveRows: Array<{ key: LeaveEntry['leave_type'] | 'public_holiday'; label: string }> =
     [
       { key: 'annual', label: 'Annual-Leave' },
       { key: 'sick', label: 'Sick-Leave' },
       { key: 'other', label: 'Other-Leave' },
       { key: 'public_holiday', label: 'Public-Holiday' },
       { key: 'unpaid', label: 'Unpaid-Leave' },
-      { key: 'absence', label: 'Absence' },
     ];
 
   const cellClass = (d: Date) => {
@@ -129,6 +138,32 @@ export function TimesheetReport({
     <div className="print-area">
       <style>{`
         @media print {
+          /* Hide everything by default */
+          body * {
+            visibility: hidden;
+          }
+          /* Show print area and its children */
+          .print-area, .print-area * {
+            visibility: visible;
+          }
+          /* Reset positioning for print area */
+          .print-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+          }
+          /* Specific overrides to hide common UI elements the visibility trick might miss or leave gaps for */
+          header, nav, aside, .print-hidden, button, [data-sidebar] {
+            display: none !important;
+          }
+          /* Overwrite the min-width for the print version to prevent horizontal clipping */
+          .print-container {
+            min-width: 1050px !important;
+            width: 100% !important;
+          }
           @page {
             size: A4 landscape;
             margin: 10mm;
@@ -139,12 +174,14 @@ export function TimesheetReport({
           }
           body {
             background: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
           }
         }
       `}</style>
 
-      <div className="rounded-md border bg-card overflow-x-auto">
-        <div className="min-w-[1200px] p-3">
+      <div className="rounded-md border bg-card overflow-x-auto print:border-none">
+        <div className="min-w-[1200px] p-3 print-container">
           <div className="grid grid-cols-3 gap-2 border border-border/80">
             <div className="p-3 border-r border-border/80">
               <div className="text-xs font-semibold">Code: {employee.employee_code ?? '—'}</div>
@@ -263,12 +300,22 @@ export function TimesheetReport({
                     Worked-Hours
                   </td>
                   {days.map((d) => {
-                    const t = timesheetByDate.get(keyOf(d));
+                    const k = keyOf(d);
+                    const t = timesheetByDate.get(k);
                     const isEnded = isAfterEndingDate(d);
-                    const hrs = t && !isEnded ? Number(t.regular_hours) + Number(t.overtime_hours) : 0;
+                    const hasLeave = leaveTypeByDate.has(k);
+                    const weekend = isWeekend(d);
+
+                    let hrs = 0;
+                    if (t && !isEnded) {
+                      hrs = Number(t.regular_hours) + Number(t.overtime_hours);
+                    } else if (!isEnded && !weekend && !hasLeave) {
+                      hrs = 8;
+                    }
+
                     return (
-                      <td key={keyOf(d)} className={cellClass(d)}>
-                        {isEnded ? '—' : hoursToHHMM(hrs)}
+                      <td key={k} className={cellClass(d)}>
+                        {isEnded ? '—' : hrs > 0 ? hoursToHHMM(hrs) : ''}
                       </td>
                     );
                   })}

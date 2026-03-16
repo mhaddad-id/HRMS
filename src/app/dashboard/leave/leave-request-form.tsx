@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -32,20 +33,51 @@ export function LeaveRequestForm({ onSuccess }: { onSuccess?: () => void }) {
     },
   });
 
+  function calculateDays(start: string, end: string) {
+    const s = new Date(start);
+    const e = new Date(end);
+    // Set to midnight to avoid time issues
+    s.setHours(0, 0, 0, 0);
+    e.setHours(0, 0, 0, 0);
+    const diffTime = e.getTime() - s.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays;
+  }
+
   async function onSubmit(values: LeaveFormValues) {
     setLoading(true);
     setError(null);
     const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     const { data: me } = await supabase
       .from('employees')
-      .select('id')
-      .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+      .select('id, annual_score, sick_score')
+      .eq('user_id', user?.id)
       .single();
+
     if (!me) {
       setError('Employee record not found');
       setLoading(false);
       return;
     }
+
+    const duration = calculateDays(values.start_date, values.end_date);
+
+    if (values.leave_type === 'annual') {
+      if ((me.annual_score || 0) < duration) {
+        setError(`Insufficient annual leave score. You have ${me.annual_score || 0} days remaining, but requested ${duration} days. You can request unpaid leave instead.`);
+        setLoading(false);
+        return;
+      }
+    } else if (values.leave_type === 'sick') {
+      if ((me.sick_score || 0) < duration) {
+        setError(`Insufficient sick leave score. You have ${me.sick_score || 0} days remaining, but requested ${duration} days.`);
+        setLoading(false);
+        return;
+      }
+    }
+
     const { error: e } = await supabase.from('leaves').insert({
       employee_id: me.id,
       leave_type: values.leave_type,

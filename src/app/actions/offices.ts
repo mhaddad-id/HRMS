@@ -14,8 +14,8 @@ export async function getOffices() {
   return data;
 }
 
-export async function createOffice(formData: { 
-  name: string; 
+export async function createOffice(formData: {
+  name: string;
   address?: string;
   working_hours_start?: string;
   working_hours_end?: string;

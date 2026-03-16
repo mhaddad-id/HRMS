@@ -46,6 +46,7 @@ export function LeaveControls({
           <SelectValue placeholder="Select an office" />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="all">All Offices</SelectItem>
           {offices.map((o) => (
             <SelectItem key={o.id} value={o.id}>
               {o.name}

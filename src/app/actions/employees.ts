@@ -2,12 +2,12 @@
 
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { employeeSchema } from '@/lib/validations/employee';
+import { employeeSchema, type EmployeeFormValues } from '@/lib/validations/employee';
 import type { UserRole } from '@/lib/database.types';
 
 export async function createEmployee(formData: FormData) {
   const raw = Object.fromEntries(formData.entries());
-  
+
   // Format numbers to avoid string vs number issues from FormData
   const values = {
     ...raw,
@@ -56,39 +56,38 @@ export async function createEmployee(formData: FormData) {
   }, { onConflict: 'id' });
 
   if (profileError) {
-      // Cleanup auth user if profile fails
-      await admin.auth.admin.deleteUser(userId);
-      return { error: 'Failed to create user profile: ' + profileError.message };
+    // Cleanup auth user if profile fails
+    await admin.auth.admin.deleteUser(userId);
+    return { error: 'Failed to create user profile: ' + profileError.message };
   }
 
 
   // 3. Create Employee Record
-  const employeePayload = {
+  const employeePayload: any = {
     user_id: userId,
-    // Database trigger or sequence will generate employee_code if omitted
     first_name: data.first_name,
     last_name: data.last_name,
-    identity_no: data.identity_no || null,
     email: data.email,
-    phone: data.phone || null,
-    father_name: data.father_name || null,
-    mother_name: data.mother_name || null,
-    date_of_birth: data.date_of_birth || null,
-    address: data.address || null,
-    emergency_contact: data.emergency_contact || null,
     position: data.position,
-    office: data.office || null,
-    office_id: data.office_id || null,
-    supervisor_id: data.supervisor_id || null,
     salary: data.salary,
     employment_date: data.employment_date,
-    ending_date: data.ending_date || null,
-    supervisor: data.supervisor || null,
-    annual_score: data.annual_score ?? 0,
-    sick_score: data.sick_score ?? 0,
-    competence_score: data.competence_score ?? 0,
     status: data.status,
+    gender: data.gender,
+    currency: data.currency || 'USD',
   };
+
+  // Map other fields and handle empty strings
+  const otherFields = [
+    'identity_no', 'phone', 'father_name', 'mother_name',
+    'date_of_birth', 'address', 'emergency_contact',
+    'office', 'office_id', 'supervisor_id', 'ending_date',
+    'supervisor', 'annual_score', 'sick_score', 'competence_score'
+  ];
+
+  otherFields.forEach(field => {
+    const val = (data as any)[field];
+    employeePayload[field] = (typeof val === 'string' && val.trim() === '') ? null : val;
+  });
 
   const { error: insertError } = await admin.from('employees').insert(employeePayload);
 
@@ -96,6 +95,63 @@ export async function createEmployee(formData: FormData) {
     // Attempt rollback
     await admin.auth.admin.deleteUser(userId);
     return { error: 'Failed to create employee record: ' + insertError.message };
+  }
+
+  revalidatePath('/dashboard/employees');
+  return { success: true };
+}
+
+export async function updateEmployee(employeeId: string, values: Partial<EmployeeFormValues>) {
+  console.log('updateEmployee called with:', { employeeId, values });
+  const admin = createAdminClient();
+
+  // We use Partial because updates might not include all fields (like password)
+  // But for the employee record, we want to ensure basic validation
+  const parsed = employeeSchema.partial().safeParse(values);
+  if (!parsed.success) {
+    return { error: 'Validation failed: ' + Object.values(parsed.error.flatten().fieldErrors).join(', ') };
+  }
+
+  const data = parsed.data;
+
+  // 1. Update Employee Record
+  const employeePayload: any = {};
+
+  // Use a safer way to build the payload from parsed data
+  const fields = [
+    'first_name', 'last_name', 'identity_no', 'email', 'phone',
+    'father_name', 'mother_name', 'date_of_birth', 'address',
+    'emergency_contact', 'position', 'office', 'office_id',
+    'supervisor_id', 'salary', 'employment_date', 'ending_date',
+    'supervisor', 'annual_score', 'sick_score', 'competence_score',
+    'status', 'gender', 'currency'
+  ];
+
+  fields.forEach(field => {
+    if (data[field as keyof typeof data] !== undefined) {
+      const val = data[field as keyof typeof data];
+      // Convert empty strings to null for database compatibility (especially for dates/UUIDs)
+      employeePayload[field] = (typeof val === 'string' && val.trim() === '') ? null : val;
+    }
+  });
+
+  // Skip undefined values to avoid overwriting with null if they weren't provided
+  Object.keys(employeePayload).forEach(key => employeePayload[key] === undefined && delete employeePayload[key]);
+
+  console.log('updateEmployee payload:', employeePayload);
+
+  const { data: updatedRows, error: updateError } = await admin
+    .from('employees')
+    .update(employeePayload)
+    .eq('id', employeeId)
+    .select();
+
+  if (updateError) {
+    return { error: 'Failed to update employee record: ' + updateError.message };
+  }
+
+  if (!updatedRows || updatedRows.length === 0) {
+    return { error: 'No employee record found with id: ' + employeeId };
   }
 
   revalidatePath('/dashboard/employees');

@@ -14,15 +14,18 @@ import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { formatDate } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 interface LeaveRow {
   id: string;
@@ -31,12 +34,17 @@ interface LeaveRow {
   end_date: string;
   reason: string | null;
   status: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_notes: string | null;
   employee?: {
     id: string;
     first_name: string;
     last_name: string;
     employee_code: string;
     office: { id: string; name: string } | null;
+    supervisor_id: string | null;
+    supervisor_record?: { id: string; first_name: string; last_name: string } | null;
   } | null;
 }
 
@@ -46,30 +54,92 @@ export function LeaveList({
   leaves,
   isHR,
   canApprove,
+  userRole,
+  currentEmployeeId,
   requiresOfficeSelection,
 }: {
   leaves: LeaveRow[];
   isHR: boolean;
   canApprove: boolean;
+  userRole?: string;
+  currentEmployeeId?: string;
   requiresOfficeSelection?: boolean;
 }) {
   const router = useRouter();
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState<{ id: string; value: any }[]>([]);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function updateStatus(leaveId: string, status: 'approved' | 'rejected') {
+  function calculateDays(start: string, end: string) {
+    const s = new Date(start);
+    const e = new Date(end);
+    s.setHours(0, 0, 0, 0);
+    e.setHours(0, 0, 0, 0);
+    const diffTime = e.getTime() - s.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays;
+  }
+
+  async function updateStatus(leaveId: string, status: 'approved' | 'rejected', notes?: string) {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
+
+    if (status === 'approved') {
+      const { data: leave } = await supabase
+        .from('leaves')
+        .select('employee_id, leave_type, start_date, end_date')
+        .eq('id', leaveId)
+        .single();
+
+      if (leave && (leave.leave_type === 'annual' || leave.leave_type === 'sick')) {
+        const duration = calculateDays(leave.start_date, leave.end_date);
+        const { data: employee } = await supabase
+          .from('employees')
+          .select('annual_score, sick_score')
+          .eq('id', leave.employee_id)
+          .single();
+
+        if (employee) {
+          const updateData: any = {};
+          if (leave.leave_type === 'annual') {
+            updateData.annual_score = (employee.annual_score || 0) - duration;
+          } else if (leave.leave_type === 'sick') {
+            updateData.sick_score = (employee.sick_score || 0) - duration;
+          }
+
+          await supabase
+            .from('employees')
+            .update(updateData)
+            .eq('id', leave.employee_id);
+        }
+      }
+    }
+
     await supabase
       .from('leaves')
       .update({
         status,
         reviewed_by: user?.id,
         reviewed_at: new Date().toISOString(),
+        review_notes: notes || null,
       })
       .eq('id', leaveId);
     router.refresh();
   }
+
+  const handleReject = async () => {
+    if (!rejectingId) return;
+    setIsSubmitting(true);
+    try {
+      await updateStatus(rejectingId, 'rejected', rejectionReason);
+      setRejectingId(null);
+      setRejectionReason('');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const columns = [
     ...(isHR ? [
@@ -83,12 +153,21 @@ export function LeaveList({
           </div>
         ),
       }),
+      columnHelper.accessor((r) => {
+        const s = r.employee?.supervisor_record;
+        return s ? `${s.first_name} ${s.last_name}` : '—';
+      }, {
+        id: 'supervisor',
+        header: 'Supervisor',
+        cell: (info) => <span className="text-sm">{info.getValue()}</span>,
+      }),
       columnHelper.accessor((r) => r.employee?.office?.name ?? '—', {
         id: 'office',
         header: 'Office',
         cell: (info) => <span className="text-sm">{info.getValue()}</span>,
         filterFn: 'equals',
       }),
+
     ] : []),
     columnHelper.accessor('leave_type', {
       header: 'Type',
@@ -109,33 +188,55 @@ export function LeaveList({
     columnHelper.accessor('status', {
       header: 'Status',
       cell: (info) => (
-        <span
-          className={
-            info.getValue() === 'approved'
-              ? 'text-green-600 dark:text-green-400'
-              : info.getValue() === 'rejected'
-                ? 'text-destructive'
-                : 'text-amber-600 dark:text-amber-400'
-          }
-        >
-          {info.getValue()}
-        </span>
+        <div className="flex flex-col">
+          <span
+            className={
+              info.getValue() === 'approved'
+                ? 'text-green-600 dark:text-green-400'
+                : info.getValue() === 'rejected'
+                  ? 'text-destructive'
+                  : 'text-amber-600 dark:text-amber-400'
+            }
+          >
+            {info.getValue()}
+          </span>
+          {info.row.original.status === 'rejected' && info.row.original.review_notes && (
+            <span className="text-[10px] text-muted-foreground italic max-w-[150px] truncate" title={info.row.original.review_notes}>
+              Reason: {info.row.original.review_notes}
+            </span>
+          )}
+        </div>
       ),
     }),
-    ...(canApprove ? [
+    ...(isHR || currentEmployeeId ? [
       columnHelper.display({
         id: 'actions',
         header: 'Actions',
-        cell: ({ row }) => row.original.status === 'pending' && (
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => updateStatus(row.original.id, 'approved')}>
-              Approve
-            </Button>
-            <Button size="sm" variant="destructive" onClick={() => updateStatus(row.original.id, 'rejected')}>
-              Reject
-            </Button>
-          </div>
-        )
+        cell: ({ row }) => {
+          if (row.original.status !== 'pending') return null;
+
+          const emp: any = row.original.employee;
+          const empObj = Array.isArray(emp) ? emp[0] : emp;
+          const empSupervisorId = empObj?.supervisor_id;
+
+          const isSupervisor = currentEmployeeId && empSupervisorId === currentEmployeeId;
+          const isAdmin = userRole === 'admin';
+
+          if (isSupervisor || isAdmin) {
+            return (
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => updateStatus(row.original.id, 'approved')}>
+                  Approve
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => setRejectingId(row.original.id)}>
+                  Reject
+                </Button>
+              </div>
+            );
+          }
+
+          return null;
+        }
       })
     ] : [])
   ];
@@ -200,6 +301,40 @@ export function LeaveList({
           </div>
         )}
       </div>
+
+      <Dialog open={!!rejectingId} onOpenChange={(open) => !open && setRejectingId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Leave Request</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting this leave request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="reason">Reason for rejection</Label>
+              <Textarea
+                id="reason"
+                placeholder="Enter rejection reason..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectingId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={!rejectionReason.trim() || isSubmitting}
+            >
+              {isSubmitting ? 'Rejecting...' : 'Confirm Rejection'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

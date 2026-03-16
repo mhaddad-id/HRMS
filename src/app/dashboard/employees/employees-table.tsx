@@ -39,9 +39,11 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import type { Employee } from '@/lib/database.types';
 import { useToast } from '@/hooks/use-toast';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 type EmployeeRow = Omit<Employee, 'supervisor' | 'office'> & {
-  supervisor?: { id: string; first_name: string; last_name: string } | { id: string; first_name: string; last_name: string }[] | string | null;
+  supervisor_record?: { id: string; first_name: string; last_name: string } | null;
+  supervisor?: string | null;
   office?: { id: string; name: string } | null;
 };
 
@@ -90,6 +92,9 @@ export function EmployeesTable({ employees, allOffices }: EmployeesTableProps) {
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState<{ id: string; value: any }[]>([]);
   const [editing, setEditing] = useState<EmployeeRow | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [confirmReset, setConfirmReset] = useState<string | null>(null);
+  const [confirmStatus, setConfirmStatus] = useState<{ id: string; next: string } | null>(null);
 
   // Get unique offices for filter
   const offices = allOffices.map(o => o.name).filter(Boolean).sort();
@@ -129,11 +134,27 @@ export function EmployeesTable({ employees, allOffices }: EmployeesTableProps) {
       filterFn: 'equals',
       enableGlobalFilter: false,
     }),
+    columnHelper.accessor('gender', {
+      header: 'Gender',
+      cell: (i) => (
+        <span className="capitalize text-sm">{i.getValue() ?? '—'}</span>
+      ),
+      enableGlobalFilter: false
+    }),
+    columnHelper.accessor('currency', {
+      header: 'Currency',
+      cell: (i) => (
+        <span className="text-xs font-mono font-bold px-1.5 py-0.5 rounded bg-muted">
+          {i.getValue() ?? 'USD'}
+        </span>
+      ),
+      enableGlobalFilter: false
+    }),
     columnHelper.accessor((r) => {
-      if (!r.supervisor) return null;
-      if (typeof r.supervisor === 'string') return r.supervisor;
-      const sup = Array.isArray(r.supervisor) ? r.supervisor[0] : r.supervisor;
-      return sup ? `${sup.first_name} ${sup.last_name}` : null;
+      if (r.supervisor_record) {
+        return `${r.supervisor_record.first_name} ${r.supervisor_record.last_name}`;
+      }
+      return r.supervisor;
     }, {
       id: 'supervisor',
       header: 'Supervisor',
@@ -179,22 +200,10 @@ export function EmployeesTable({ employees, allOffices }: EmployeesTableProps) {
             </DropdownMenuItem>
             <DropdownMenuItem
               className="rounded-lg"
-              onClick={async () => {
+              onClick={() => {
                 const current = row.original.status;
                 const next = current === 'active' ? 'inactive' : 'active';
-                const msg = next === 'inactive' ? 'Disable this employee?' : 'Enable this employee?';
-                if (!confirm(msg)) return;
-                const supabase = createClient();
-                const { error } = await supabase
-                  .from('employees')
-                  .update({ status: next })
-                  .eq('id', row.original.id);
-                if (error) {
-                  toast({ title: 'Error', description: error.message, variant: 'destructive' });
-                  return;
-                }
-                toast({ title: 'Success', description: `Employee ${next}.` });
-                router.refresh();
+                setConfirmStatus({ id: row.original.id, next });
               }}
             >
               <Ban className="mr-2 h-4 w-4" />
@@ -202,37 +211,14 @@ export function EmployeesTable({ employees, allOffices }: EmployeesTableProps) {
             </DropdownMenuItem>
             <DropdownMenuItem
               className="rounded-lg"
-              onClick={async () => {
-                if (!confirm('Reset annual/sick/competence scores to 0?')) return;
-                const supabase = createClient();
-                const { error } = await supabase
-                  .from('employees')
-                  .update({ annual_score: 0, sick_score: 0, competence_score: 0 })
-                  .eq('id', row.original.id);
-                if (error) {
-                  toast({ title: 'Error', description: error.message, variant: 'destructive' });
-                  return;
-                }
-                toast({ title: 'Success', description: 'Scores reset.' });
-                router.refresh();
-              }}
+              onClick={() => setConfirmReset(row.original.id)}
             >
               <RotateCcw className="mr-2 h-4 w-4" />
               Reset
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive rounded-lg"
-              onClick={async () => {
-                if (!confirm('Delete this employee?')) return;
-                const supabase = createClient();
-                const { error } = await supabase.from('employees').delete().eq('id', row.original.id);
-                if (error) {
-                  toast({ title: 'Error', description: error.message, variant: 'destructive' });
-                  return;
-                }
-                toast({ title: 'Deleted', description: 'Employee removed.' });
-                router.refresh();
-              }}
+              onClick={() => setConfirmDelete(row.original.id)}
             >
               <Trash2 className="mr-2 h-4 w-4" />
               Delete
@@ -431,15 +417,17 @@ export function EmployeesTable({ employees, allOffices }: EmployeesTableProps) {
                 employment_date: editing.employment_date,
                 ending_date: editing.ending_date ?? undefined,
                 supervisor: (() => {
-                  if (!editing.supervisor) return undefined;
-                  if (typeof editing.supervisor === 'string') return editing.supervisor;
-                  const sup = Array.isArray(editing.supervisor) ? editing.supervisor[0] : editing.supervisor;
-                  return sup ? `${sup.first_name} ${sup.last_name}` : undefined;
+                  if (editing.supervisor_record) {
+                    return `${editing.supervisor_record.first_name} ${editing.supervisor_record.last_name}`;
+                  }
+                  return editing.supervisor ?? undefined;
                 })(),
                 annual_score: editing.annual_score ?? 0,
                 sick_score: editing.sick_score ?? 0,
                 competence_score: editing.competence_score ?? 0,
                 status: editing.status,
+                gender: (editing as any).gender ?? 'male',
+                currency: (editing as any).currency ?? 'USD',
               }}
               onSuccess={() => {
                 setEditing(null);
@@ -449,6 +437,58 @@ export function EmployeesTable({ employees, allOffices }: EmployeesTableProps) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Confirm Status Change */}
+      <ConfirmDialog
+        open={!!confirmStatus}
+        onOpenChangeAction={(o) => { if (!o) setConfirmStatus(null); }}
+        title={confirmStatus?.next === 'inactive' ? 'Disable Employee' : 'Enable Employee'}
+        description={`Are you sure you want to ${confirmStatus?.next === 'inactive' ? 'disable' : 'enable'} this employee?`}
+        confirmLabel={confirmStatus?.next === 'inactive' ? 'Disable' : 'Enable'}
+        onConfirmAction={async () => {
+          if (!confirmStatus) return;
+          const supabase = createClient();
+          const { error } = await supabase.from('employees').update({ status: confirmStatus.next }).eq('id', confirmStatus.id);
+          if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+          toast({ title: 'Success', description: `Employee ${confirmStatus.next}.` });
+          router.refresh();
+        }}
+      />
+
+      {/* Confirm Score Reset */}
+      <ConfirmDialog
+        open={!!confirmReset}
+        onOpenChangeAction={(o) => { if (!o) setConfirmReset(null); }}
+        title="Reset Scores"
+        description="Are you sure you want to reset annual, sick, and competence scores to 0?"
+        confirmLabel="Reset"
+        onConfirmAction={async () => {
+          if (!confirmReset) return;
+          const supabase = createClient();
+          const { error } = await supabase.from('employees').update({ annual_score: 0, sick_score: 0, competence_score: 0 }).eq('id', confirmReset);
+          if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+          toast({ title: 'Success', description: 'Scores reset.' });
+          router.refresh();
+        }}
+      />
+
+      {/* Confirm Delete */}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onOpenChangeAction={(o) => { if (!o) setConfirmDelete(null); }}
+        title="Delete Employee"
+        description="Are you sure you want to delete this employee? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirmAction={async () => {
+          if (!confirmDelete) return;
+          const supabase = createClient();
+          const { error } = await supabase.from('employees').delete().eq('id', confirmDelete);
+          if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
+          toast({ title: 'Deleted', description: 'Employee removed.' });
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -43,6 +45,15 @@ export function CreateMeetingForm({
   const [location, setLocation] = useState('');
   const [officeId, setOfficeId] = useState<string>('none');
   const [participants, setParticipants] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredUsers = users.filter((u) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      u.full_name?.toLowerCase().includes(searchLower) ||
+      u.email.toLowerCase().includes(searchLower)
+    );
+  });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -69,7 +80,7 @@ export function CreateMeetingForm({
     if (meeting && participants.length > 0) {
       await supabase
         .from('meeting_participants')
-        .insert(participants.map((user_id) => ({ meeting_id: meeting.id, user_id })));
+        .insert(participants.map((user_id: string) => ({ meeting_id: meeting.id, user_id })));
     }
 
     setLoading(false);
@@ -78,7 +89,7 @@ export function CreateMeetingForm({
   }
 
   function toggleParticipant(id: string) {
-    setParticipants((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+    setParticipants((p: string[]) => (p.includes(id) ? p.filter((x: string) => x !== id) : [...p, id]));
   }
 
   return (
@@ -132,17 +143,68 @@ export function CreateMeetingForm({
       </div>
       <div className="space-y-2">
         <Label>Participants</Label>
-        <div className="max-h-32 overflow-y-auto space-y-2 border rounded p-2">
-          {users.map((u) => (
-            <label key={u.id} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={participants.includes(u.id)}
-                onChange={() => toggleParticipant(u.id)}
-              />
-              <span className="text-sm">{u.full_name || u.email}</span>
-            </label>
-          ))}
+
+        {/* Selected Participants Badges */}
+        {participants.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 p-2 bg-muted/30 rounded-md border min-h-[42px]">
+            {participants.map((id) => {
+              const user = users.find((u) => u.id === id);
+              return (
+                <Badge
+                  key={id}
+                  variant="secondary"
+                  className="flex items-center gap-1.5 px-2 py-0.5 animate-in zoom-in-95"
+                >
+                  <span className="max-w-[120px] truncate">{user?.full_name || user?.email}</span>
+                  <X
+                    className="h-3 w-3 cursor-pointer hover:text-destructive transition-colors"
+                    onClick={() => toggleParticipant(id)}
+                  />
+                </Badge>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search participants..."
+            className="pl-9 h-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {/* User List */}
+        <div className="max-h-40 overflow-y-auto space-y-1 border rounded-md p-2 bg-background shadow-inner">
+          {filteredUsers.length > 0 ? (
+            filteredUsers.map((u) => (
+              <label
+                key={u.id}
+                className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-all hover:bg-muted ${participants.includes(u.id) ? 'bg-muted/60' : ''
+                  }`}
+              >
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-primary"
+                  checked={participants.includes(u.id)}
+                  onChange={() => toggleParticipant(u.id)}
+                />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium leading-none">
+                    {u.full_name || 'No Name'}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">{u.email}</span>
+                </div>
+              </label>
+            ))
+          ) : (
+            <div className="py-6 text-center text-sm text-muted-foreground italic">
+              No participants found
+            </div>
+          )}
         </div>
       </div>
       <Button

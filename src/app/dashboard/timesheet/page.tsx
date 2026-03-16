@@ -69,7 +69,7 @@ export default async function TimesheetPage({
 
     const { data: emps, error } = await query;
     const finalEmps = emps ?? [];
-    
+
     // Ensure myEmployee is in the list if not already there, and if they match the office filter
     if (!canPickAnyEmployee && myEmployee && !finalEmps.find(e => e.id === myEmployee.id)) {
       if (!rawOffice || myEmployee.office_id === rawOffice) {

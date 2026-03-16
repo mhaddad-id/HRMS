@@ -19,8 +19,10 @@ type UserWithEmployee = User & {
         id: string;
         first_name: string;
         last_name: string;
+        employee_code: string | null;
+        position: string | null;
         office: string | null;
-        supervisor?: { id: string; first_name: string; last_name: string } | null;
+        supervisor_record?: { id: string; first_name: string; last_name: string } | null;
     } | null;
 };
 
@@ -67,27 +69,15 @@ export function UsersTable({ users }: UsersTableProps) {
         const query = searchQuery.toLowerCase();
         const fullName = (user.full_name || '').toLowerCase();
         const email = (user.email || '').toLowerCase();
-        const empFirstName = (user.employee?.first_name || '').toLowerCase();
-        const empLastName = (user.employee?.last_name || '').toLowerCase();
+        const empCode = (user.employee?.employee_code || '').toLowerCase();
+        const empPosition = (user.employee?.position || '').toLowerCase();
 
         return fullName.includes(query) ||
             email.includes(query) ||
-            empFirstName.includes(query) ||
-            empLastName.includes(query);
+            empCode.includes(query) ||
+            empPosition.includes(query);
     });
 
-    const getFallbackNameParts = (user: User) => {
-        const directFirst = user.first_name ?? '';
-        const directLast = user.last_name ?? '';
-        if (directFirst || directLast) return { first: directFirst, last: directLast };
-        const full = (user.full_name ?? '').trim();
-        if (!full) return { first: '', last: '' };
-        const parts = full.split(/\s+/);
-        return {
-            first: parts[0] ?? '',
-            last: parts.slice(1).join(' '),
-        };
-    };
 
     const handleRoleChange = async (userId: string, newRole: string) => {
         setLoadingIds((prev) => new Set(prev).add(userId));
@@ -148,7 +138,7 @@ export function UsersTable({ users }: UsersTableProps) {
                     <table className="w-full border-collapse text-sm">
                         <thead>
                             <tr className="border-b bg-muted/50">
-                                {['ID', 'User', 'Name', 'Surname', 'Office', 'Supervisor', 'Role'].map((col) => (
+                                {['Code', 'User', 'Position', 'Supervisor', 'Office', 'Role'].map((col) => (
                                     <th
                                         key={col}
                                         className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap"
@@ -161,17 +151,16 @@ export function UsersTable({ users }: UsersTableProps) {
                         <tbody>
                             {filteredUsers.map((user) => {
                                 const emp = user.employee;
-                                const supervisorName = emp?.supervisor
-                                    ? `${emp.supervisor.first_name} ${emp.supervisor.last_name}`
+                                const supervisorName = emp?.supervisor_record
+                                    ? `${emp.supervisor_record.first_name} ${emp.supervisor_record.last_name}`
                                     : null;
-                                const shortId = user.id.slice(0, 8);
 
                                 return (
                                     <tr key={user.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                                        {/* ID */}
+                                        {/* Code */}
                                         <td className="px-4 py-3 align-middle">
                                             <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded text-muted-foreground">
-                                                {shortId}…
+                                                {emp?.employee_code || '—'}
                                             </span>
                                         </td>
 
@@ -186,16 +175,19 @@ export function UsersTable({ users }: UsersTableProps) {
                                             </div>
                                         </td>
 
-                                        {/* First Name */}
+                                        {/* Position */}
                                         <td className="px-4 py-3 align-middle">
-                                            <span className="text-sm">{emp?.first_name ?? <span className="text-muted-foreground text-xs">—</span>}</span>
+                                            <span className="text-sm">{emp?.position ?? <span className="text-muted-foreground text-xs">—</span>}</span>
                                         </td>
 
-                                        {/* Last Name */}
+                                        {/* Supervisor */}
                                         <td className="px-4 py-3 align-middle">
-                                            <span className="text-sm">{emp?.last_name ?? <span className="text-muted-foreground text-xs">—</span>}</span>
+                                            {supervisorName ? (
+                                                <span className="text-sm">{supervisorName}</span>
+                                            ) : (
+                                                <span className="text-muted-foreground text-xs">—</span>
+                                            )}
                                         </td>
-
                                         {/* Office */}
                                         <td className="px-4 py-3 align-middle">
                                             {emp?.office ? (
@@ -207,16 +199,6 @@ export function UsersTable({ users }: UsersTableProps) {
                                                 <span className="text-muted-foreground text-xs">—</span>
                                             )}
                                         </td>
-
-                                        {/* Supervisor */}
-                                        <td className="px-4 py-3 align-middle">
-                                            {supervisorName ? (
-                                                <span className="text-sm">{supervisorName}</span>
-                                            ) : (
-                                                <span className="text-muted-foreground text-xs">—</span>
-                                            )}
-                                        </td>
-
                                         {/* Role */}
                                         <td className="px-4 py-3 align-middle">
                                             <Select

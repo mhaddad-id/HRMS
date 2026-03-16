@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select';
 import { employeeSchema, type EmployeeFormValues } from '@/lib/validations/employee';
 import { createClient } from '@/lib/supabase/client';
-import { createEmployee } from '@/app/actions/employees';
+import { createEmployee, updateEmployee } from '@/app/actions/employees';
 import type { Employee } from '@/lib/database.types';
 
 interface EmployeeFormProps {
@@ -68,6 +68,8 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
       sick_score: initial?.sick_score ?? 0,
       competence_score: initial?.competence_score ?? 0,
       status: initial?.status ?? 'active',
+      gender: (initial as any)?.gender ?? 'male',
+      currency: (initial as any)?.currency ?? 'USD',
     },
   });
 
@@ -75,57 +77,45 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
     setLoading(true);
     setError(null);
 
-    if (isEdit) {
-      const supabase = createClient();
-      const payload = {
-        first_name: values.first_name,
-        last_name: values.last_name,
-        identity_no: values.identity_no?.trim() ? values.identity_no.trim() : null,
-        email: values.email,
-        phone: values.phone || null,
-        father_name: values.father_name?.trim() ? values.father_name.trim() : null,
-        mother_name: values.mother_name?.trim() ? values.mother_name.trim() : null,
-        date_of_birth: values.date_of_birth || null,
-        address: values.address?.trim() ? values.address.trim() : null,
-        emergency_contact: values.emergency_contact?.trim() ? values.emergency_contact.trim() : null,
-        position: values.position,
-        office: values.office || null,
-        office_id: values.office_id || null,
-        supervisor_id: values.supervisor_id || null,
-        salary: values.salary,
-        employment_date: values.employment_date,
-        ending_date: values.ending_date || null,
-        supervisor: values.supervisor?.trim() ? values.supervisor.trim() : null,
-        annual_score: values.annual_score ?? 0,
-        sick_score: values.sick_score ?? 0,
-        competence_score: values.competence_score ?? 0,
-        status: values.status,
-      };
-
-      const { error: e } = await supabase.from('employees').update(payload).eq('id', initial!.id);
-      if (e) { setError(e.message); setLoading(false); return; }
-    } else {
-      const formData = new FormData();
-      Object.entries(values).forEach(([key, value]) => {
-        if (value !== null && value !== undefined && value !== '') {
-          formData.append(key, value.toString());
+    try {
+      if (isEdit) {
+        const result = await updateEmployee(initial!.id as string, values);
+        if (result.error) {
+          setError(result.error);
+          setLoading(false);
+          return;
         }
-      });
-      const result = await createEmployee(formData);
-      if (result.error) {
-        setError(result.error);
-        setLoading(false);
-        return;
+      } else {
+        const formData = new FormData();
+        Object.entries(values).forEach(([key, value]) => {
+          if (value !== null && value !== undefined && value !== '') {
+            formData.append(key, value.toString());
+          }
+        });
+        const result = await createEmployee(formData);
+        if (result.error) {
+          setError(result.error);
+          setLoading(false);
+          return;
+        }
       }
+      setLoading(false);
+      router.refresh();
+      onSuccess?.();
+      form.reset();
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred during submission.');
+      setLoading(false);
     }
-    setLoading(false);
-    router.refresh();
-    onSuccess?.();
-    form.reset();
   }
 
+  const onInvalid = (errors: any) => {
+    const errorMessages = Object.entries(errors).map(([field, err]: [string, any]) => `${field}: ${err.message}`).join(', ');
+    setError(`Validation failed: ${errorMessages}`);
+  };
+
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+    <form onSubmit={form.handleSubmit(onSubmit, onInvalid)} className="space-y-5">
       {error && (
         <div className="rounded-lg bg-destructive/10 text-destructive text-sm p-3 border border-destructive/20">{error}</div>
       )}
@@ -173,6 +163,7 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
         </div>
       </div>
 
+
       {/* Row: First + Last name */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
@@ -200,6 +191,28 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
           <Input {...form.register('mother_name')} />
         </div>
       </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label>Gender</Label>
+          <Select
+            value={form.watch('gender') || 'male'}
+            onValueChange={(v) => form.setValue('gender', v as any)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select gender" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="male">Male</SelectItem>
+              <SelectItem value="female">Female</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Date of Birth</Label>
+          <Input type="date" {...form.register('date_of_birth')} />
+        </div>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Email</Label>
@@ -221,10 +234,7 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
           <Label>Emergency Contact</Label>
           <Input {...form.register('emergency_contact')} />
         </div>
-        <div className="space-y-2">
-          <Label>Date of Birth</Label>
-          <Input type="date" {...form.register('date_of_birth')} />
-        </div>
+
       </div>
       <div className="space-y-2">
         <Label>Address</Label>
@@ -271,7 +281,14 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
         <Label>Supervisor</Label>
         <Select
           value={form.watch('supervisor_id') || 'none'}
-          onValueChange={(v) => form.setValue('supervisor_id', v === 'none' ? null : v)}
+          onValueChange={(v) => {
+            const val = v === 'none' ? null : v;
+            form.setValue('supervisor_id', val);
+            // Also sync the 'supervisor' text field for backward compatibility/table display
+            const sup = employees.find(e => e.id === val);
+            const fullName = sup ? `${sup.first_name} ${sup.last_name}` : '';
+            form.setValue('supervisor', fullName);
+          }}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select supervisor (optional)" />
@@ -301,6 +318,26 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
             <p className="text-sm text-destructive">{form.formState.errors.salary.message}</p>
           )}
         </div>
+
+        <div className="space-y-2">
+          <Label>Currency</Label>
+          <Select
+            value={form.watch('currency') || 'USD'}
+            onValueChange={(v) => form.setValue('currency', v as any)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select currency" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="USD">USD</SelectItem>
+              <SelectItem value="EUR">EUR</SelectItem>
+              <SelectItem value="TRY">TRY</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Employment Date</Label>
           <Input type="date" {...form.register('employment_date')} />
@@ -308,12 +345,11 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
             <p className="text-sm text-destructive">{form.formState.errors.employment_date.message}</p>
           )}
         </div>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Ending Date</Label>
           <Input type="date" {...form.register('ending_date')} />
         </div>
+
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2">
@@ -326,6 +362,9 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
               setValueAs: (v) => (v === '' ? 0 : Number(v)),
             })}
           />
+          {form.formState.errors.annual_score && (
+            <p className="text-sm text-destructive">{form.formState.errors.annual_score.message}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label>Sick Score</Label>
@@ -337,6 +376,9 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
               setValueAs: (v) => (v === '' ? 0 : Number(v)),
             })}
           />
+          {form.formState.errors.sick_score && (
+            <p className="text-sm text-destructive">{form.formState.errors.sick_score.message}</p>
+          )}
         </div>
         <div className="space-y-2">
           <Label>Competence Score</Label>
@@ -348,6 +390,9 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
               setValueAs: (v) => (v === '' ? 0 : Number(v)),
             })}
           />
+          {form.formState.errors.competence_score && (
+            <p className="text-sm text-destructive">{form.formState.errors.competence_score.message}</p>
+          )}
         </div>
       </div>
 

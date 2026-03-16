@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   useReactTable,
   getCoreRowModel,
@@ -24,154 +25,73 @@ import { formatMoney, formatDate } from '@/lib/utils';
 
 interface PayrollRow {
   id: string;
-  period_start: string;
-  period_end: string;
-  base_salary: number;
-  overtime_pay: number;
-  deductions: number;
-  worked_days?: number | null;
-  leave_without_pay?: number | null;
-  currency?: string | null;
-  net_salary: number;
-  status: string;
-  employee?: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    employee_code: string;
-    email?: string | null;
-    supervisor?: string | null;
-    position?: string | null;
-    salary?: number | null;
-    office?: { id: string; name: string } | null;
-  } | null;
+  name: string;
+  position: string;
+  worked_days: number;
+  lwp: number;
+  deduction: number;
+  salary: number;
+  currency: string;
+  amount: number;
+  office_name: string;
 }
+
 
 const columnHelper = createColumnHelper<PayrollRow>();
 
-export function PayrollTable({ payrolls }: { payrolls: PayrollRow[] }) {
+export function PayrollTable({
+  payrolls,
+  allOffices,
+  currentMonth
+}: {
+  payrolls: PayrollRow[];
+  allOffices: { id: string; name: string }[];
+  currentMonth: string;
+}) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const currentOffice = searchParams.get('office') ?? 'all';
+
+
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState<{ id: string; value: any }[]>([]);
 
-  // Get unique offices for filter
-  const offices = Array.from(new Set(payrolls.map(p => p.employee?.office?.name).filter(Boolean))).sort();
 
   const columns = [
-    columnHelper.accessor((r) => r.employee ? `${r.employee.first_name} ${r.employee.last_name}` : '—', {
-      id: 'employee_name',
-      header: 'Employee',
-      cell: (info) => (
-        <div className="flex flex-col">
-          <span className="font-medium">{info.getValue()}</span>
-          <span className="text-xs text-muted-foreground">{info.row.original.employee?.employee_code}</span>
-        </div>
-      ),
+    columnHelper.accessor('name', {
+      header: 'Name',
+      cell: (info) => <span className="font-medium text-sm">{info.getValue()}</span>,
     }),
-    columnHelper.accessor((r) => r.employee?.office?.name ?? '—', {
-      id: 'office',
-      header: 'Office',
-      cell: (info) => <span className="text-sm">{info.getValue()}</span>,
-      filterFn: 'equals',
-    }),
-    columnHelper.accessor('period_start', {
-      header: 'Period',
-      cell: (r) => `${formatDate(r.row.original.period_start)} – ${formatDate(r.row.original.period_end)}`,
+    columnHelper.accessor('position', {
+      header: 'Position',
+      cell: (info) => <span className="text-sm text-muted-foreground">{info.getValue()}</span>,
     }),
     columnHelper.accessor('worked_days', {
       header: 'Worked Days',
-      cell: (i) => i.getValue() ?? 0,
+      cell: (info) => <span className="text-sm">{info.getValue()}</span>,
     }),
-    columnHelper.accessor('base_salary', {
-      header: 'Base',
-      cell: (info) => formatMoney(Number(info.getValue()), info.row.original.currency ?? 'USD'),
+    columnHelper.accessor('lwp', {
+      header: 'Leave without pay',
+      cell: (info) => <span className="text-sm text-amber-600">{info.getValue()} days</span>,
     }),
-    columnHelper.accessor('overtime_pay', {
-      header: 'Overtime',
-      cell: (info) => formatMoney(Number(info.getValue()), info.row.original.currency ?? 'USD'),
+    columnHelper.accessor('deduction', {
+      header: 'Deduction',
+      cell: (info) => <span className="text-sm font-medium text-destructive">{formatMoney(info.getValue(), info.row.original.currency)}</span>,
     }),
-    columnHelper.accessor('deductions', {
-      header: 'Deductions',
-      cell: (info) => formatMoney(Number(info.getValue()), info.row.original.currency ?? 'USD'),
+    columnHelper.accessor('salary', {
+      header: 'Salary',
+      cell: (info) => <span className="text-sm">{formatMoney(info.getValue(), info.row.original.currency)}</span>,
     }),
-    columnHelper.accessor('leave_without_pay', {
-      header: 'LWP',
-      cell: (info) => formatMoney(Number(info.getValue() ?? 0), info.row.original.currency ?? 'USD'),
+    columnHelper.accessor('currency', {
+      header: 'Currency',
+      cell: (info) => <span className="text-xs font-mono">{info.getValue()}</span>,
     }),
-    columnHelper.accessor('net_salary', {
-      header: 'Net',
-      cell: (info) => (
-        <span className="font-bold">
-          {formatMoney(Number(info.getValue()), info.row.original.currency ?? 'USD')}
-        </span>
-      ),
-    }),
-    columnHelper.accessor('status', {
-      header: 'Status',
-      cell: (info) => (
-        <span
-          className={`capitalize font-medium ${info.getValue() === 'paid' ? 'text-emerald-600' : 'text-amber-600'
-            }`}
-        >
-          {info.getValue()}
-        </span>
-      ),
-    }),
-    columnHelper.display({
-      id: 'actions',
-      header: '',
-      cell: (info) => (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-primary"
-          onClick={() => {
-            const r = info.row.original;
-            const printContent = `
-              <html>
-                <head>
-                  <title>Payroll - ${r.employee?.first_name} ${r.employee?.last_name}</title>
-                  <style>
-                    body { font-family: sans-serif; padding: 40px; }
-                    .header { border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px; }
-                    .row { display: flex; justify-content: space-between; margin-bottom: 10px; }
-                    .label { font-weight: bold; }
-                    .footer { margin-top: 40px; border-top: 1px solid #ddd; padding-top: 10px; font-size: 12px; }
-                    @media print { .no-print { display: none; } }
-                  </style>
-                </head>
-                <body>
-                  <div class="header">
-                    <h1>Employee Payslip</h1>
-                    <p>${r.employee?.first_name} ${r.employee?.last_name} (${r.employee?.employee_code})</p>
-                  </div>
-                  <div class="row"><span class="label">Period:</span> <span>${formatDate(r.period_start)} - ${formatDate(r.period_end)}</span></div>
-                  <div class="row"><span class="label">Base Salary:</span> <span>${formatMoney(r.base_salary, r.currency ?? 'USD')}</span></div>
-                  <div class="row"><span class="label">Overtime Pay:</span> <span>${formatMoney(r.overtime_pay, r.currency ?? 'USD')}</span></div>
-                  <div class="row"><span class="label">Deductions:</span> <span>${formatMoney(r.deductions, r.currency ?? 'USD')}</span></div>
-                  <div class="row"><span class="label">Net Salary:</span> <span style="font-size: 1.2em; font-weight: bold;">${formatMoney(r.net_salary, r.currency ?? 'USD')}</span></div>
-                  <div class="footer">
-                    <p>Generated on ${new Date().toLocaleDateString()}</p>
-                  </div>
-                </body>
-              </html>
-            `;
-            const printWindow = window.open('', '_blank');
-            if (printWindow) {
-              printWindow.document.write(printContent);
-              printWindow.document.close();
-              printWindow.focus();
-              setTimeout(() => {
-                printWindow.print();
-                printWindow.close();
-              }, 250);
-            }
-          }}
-        >
-          <Printer className="h-4 w-4" />
-        </Button>
-      ),
+    columnHelper.accessor('amount', {
+      header: 'Amount',
+      cell: (info) => <span className="text-sm font-bold">{formatMoney(info.getValue(), info.row.original.currency)}</span>,
     }),
   ];
+
 
   const table = useReactTable({
     data: payrolls,
@@ -188,20 +108,41 @@ export function PayrollTable({ payrolls }: { payrolls: PayrollRow[] }) {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
+          <Input
+            type="month"
+            value={currentMonth}
+            onChange={(e) => {
+              const params = new URLSearchParams(searchParams.toString());
+              if (e.target.value) {
+                params.set('month', e.target.value);
+              } else {
+                params.delete('month');
+              }
+              router.push(`?${params.toString()}`);
+            }}
+            className="w-full sm:w-[160px] h-9"
+          />
+
           <Select
-            value={(table.getColumn('office')?.getFilterValue() as string) ?? 'all'}
-            onValueChange={(value) =>
-              table.getColumn('office')?.setFilterValue(value === 'all' ? undefined : value)
-            }
+            value={currentOffice}
+            onValueChange={(value) => {
+              const params = new URLSearchParams(searchParams.toString());
+              if (value === 'all') {
+                params.delete('office');
+              } else {
+                params.set('office', value);
+              }
+              router.push(`?${params.toString()}`);
+            }}
           >
             <SelectTrigger className="w-full sm:w-[180px] h-9">
               <SelectValue placeholder="All Offices" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Offices</SelectItem>
-              {offices.map((office) => (
-                <SelectItem key={office} value={office!}>
-                  {office}
+              {allOffices.map((office) => (
+                <SelectItem key={office.id} value={office.name}>
+                  {office.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -210,13 +151,107 @@ export function PayrollTable({ payrolls }: { payrolls: PayrollRow[] }) {
           <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search employees..."
+              placeholder="Search by name..."
               value={globalFilter}
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="pl-9 h-9 w-full sm:w-[240px]"
             />
           </div>
         </div>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const [y, m] = currentMonth.split('-');
+            const monthName = new Date(Number(y), Number(m) - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+
+            const printContent = `
+              <html>
+                <head>
+                  <title>Payroll Worksheet - ${monthName}</title>
+                  <style>
+                    body { font-family: 'Inter', sans-serif; padding: 20px; color: #333; }
+                    .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px; }
+                    .header h1 { margin: 0; color: #111; font-size: 24px; }
+                    .header p { margin: 5px 0 0; color: #666; font-size: 16px; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+                    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                    th { bg-color: #f8f9fa; font-weight: bold; text-transform: uppercase; font-size: 10px; }
+                    .text-right { text-align: right; }
+                    .font-bold { font-weight: bold; }
+                    .footer { margin-top: 30px; font-size: 12px; }
+                    .totals { margin-top: 20px; border-top: 2px solid #333; padding-top: 10px; }
+                    .totals-row { display: flex; justify-content: flex-end; gap: 40px; font-size: 14px; font-weight: bold; }
+                    @media print { 
+                      .no-print { display: none; } 
+                      body { padding: 0; }
+                    }
+                  </style>
+                </head>
+                <body>
+                  <div class="header">
+                    <h1>Payroll Worksheet</h1>
+                    <p>${monthName}${currentOffice !== 'all' ? ` - ${currentOffice} Office` : ''}</p>
+                  </div>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Position</th>
+                        <th>Worked Days</th>
+                        <th>LWP</th>
+                        <th>Deduction</th>
+                        <th>Salary</th>
+                        <th>Currency</th>
+                        <th>Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${payrolls.map(r => `
+                        <tr>
+                          <td>${r.name}</td>
+                          <td>${r.position}</td>
+                          <td>${r.worked_days}</td>
+                          <td>${r.lwp} days</td>
+                          <td class="text-right">${formatMoney(r.deduction, r.currency)}</td>
+                          <td class="text-right">${formatMoney(r.salary, r.currency)}</td>
+                          <td>${r.currency}</td>
+                          <td class="text-right font-bold">${formatMoney(r.amount, r.currency)}</td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                    <tfoot>
+                      <tr class="font-bold">
+                        <td colspan="5" class="text-right">TOTALS</td>
+                        <td class="text-right">${formatMoney(payrolls.reduce((sum, r) => sum + r.salary, 0), payrolls[0]?.currency || 'USD')}</td>
+                        <td></td>
+                        <td class="text-right">${formatMoney(payrolls.reduce((sum, r) => sum + r.amount, 0), payrolls[0]?.currency || 'USD')}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                  <div class="footer">
+                    <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+                  </div>
+                </body>
+              </html>
+            `;
+            const printWindow = window.open('', '_blank');
+            if (printWindow) {
+              printWindow.document.write(printContent);
+              printWindow.document.close();
+              printWindow.focus();
+              setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+              }, 250);
+            }
+          }}
+          className="h-9 gap-2"
+        >
+          <Printer className="h-4 w-4" />
+          Print Report
+        </Button>
       </div>
 
       <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
@@ -250,7 +285,24 @@ export function PayrollTable({ payrolls }: { payrolls: PayrollRow[] }) {
                 </tr>
               ))}
             </tbody>
+            {payrolls.length > 0 && (
+              <tfoot className="bg-muted/50 border-t-2 font-bold">
+                <tr>
+                  <td colSpan={5} className="px-4 py-3 text-right uppercase tracking-wider text-[10px]">
+                    Monthly Totals
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm">
+                    {formatMoney(payrolls.reduce((sum, r) => sum + r.salary, 0), payrolls[0]?.currency || 'USD')}
+                  </td>
+                  <td></td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-primary">
+                    {formatMoney(payrolls.reduce((sum, r) => sum + r.amount, 0), payrolls[0]?.currency || 'USD')}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
+
           {table.getRowModel().rows.length === 0 && (
             <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
               <p className="font-semibold text-foreground">No payroll records found</p>

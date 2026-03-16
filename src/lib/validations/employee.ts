@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const employeeSchema = z.object({
   employee_code: z.string().optional(),
-  password: z.string().min(6, 'Password must be at least 6 characters').optional(),
+  password: z.string().min(6, 'Password must be at least 6 characters').optional().or(z.literal('')),
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   identity_no: z.string().optional(),
@@ -25,6 +25,8 @@ export const employeeSchema = z.object({
   sick_score: z.number().int().min(0).optional(),
   competence_score: z.number().int().min(0).optional(),
   status: z.enum(['active', 'inactive']),
+  gender: z.enum(['male', 'female']).optional(),
+  currency: z.enum(['USD', 'EUR', 'TRY']).default('USD'),
 });
 
 export type EmployeeFormValues = z.infer<typeof employeeSchema>;

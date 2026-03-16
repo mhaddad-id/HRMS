@@ -39,6 +39,8 @@ export interface Database {
                     annual_score: number
                     sick_score: number
                     competence_score: number
+                    gender: string | null
+                    currency: string | null
                 }
                 Insert: {
                     id?: string

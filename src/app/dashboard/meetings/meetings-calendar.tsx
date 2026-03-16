@@ -43,8 +43,8 @@ interface Office {
 }
 
 // Calendar constants
-const HOUR_START = 8;   // 8 AM
-const HOUR_END = 21;    // 9 PM
+const HOUR_START = 9;   // 9 AM
+const HOUR_END = 18;    // Show until 6 PM (includes 5 PM slots)
 const SLOT_MINUTES = 30;
 const SLOT_HEIGHT = 48; // px per 30-min slot
 const TIME_COL_WIDTH = 72; // px
@@ -53,7 +53,9 @@ function generateTimeSlots() {
   const slots: string[] = [];
   for (let h = HOUR_START; h < HOUR_END; h++) {
     slots.push(`${h}:00`);
-    slots.push(`${h}:30`);
+    if (h < HOUR_END - 1 || HOUR_END % 1 === 0) { // Keep consistency
+      slots.push(`${h}:30`);
+    }
   }
   return slots;
 }
@@ -226,17 +228,20 @@ export function MeetingsCalendar({
         </div>
 
         {/* All Day row */}
-        <div className="flex border-b flex-shrink-0" style={{ minHeight: 32 }}>
+        <div className="flex border-b flex-shrink-0" style={{ minHeight: 48 }}>
+
           <div
-            className="flex-shrink-0 border-r flex items-center justify-end pr-2 text-xs text-muted-foreground"
+            className="flex-shrink-0 border-r flex items-center justify-end pr-2 text-xs text-muted-foreground mb-2"
             style={{ width: TIME_COL_WIDTH }}
           >
             All Day
           </div>
+
           {weekDays.map((day) => (
             <div key={day.toISOString()} className="flex-1 border-l" />
           ))}
         </div>
+
 
         {/* Scrollable time grid */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto relative bg-background">
