@@ -31,8 +31,8 @@ interface UsersTableProps {
 }
 
 const ROLE_COLORS: Record<string, string> = {
-    admin: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
-    hr_manager: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    admin: 'bg-emerald-600/10 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300',
+    hr_manager: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
     employee: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
 };
 
@@ -46,11 +46,11 @@ function UserAvatar({ name, email }: { name?: string | null; email: string }) {
     const displayName = name || email;
     const initials = displayName.slice(0, 2).toUpperCase();
     const colors = [
-        'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
-        'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-        'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-        'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300',
+        'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+        'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
         'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300',
+        'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300',
+        'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/60 dark:text-emerald-400',
     ];
     const colorIdx = displayName.charCodeAt(0) % colors.length;
     return (

@@ -66,22 +66,20 @@ export default async function AdminDashboardPage() {
     { data: upcomingMeetings },
     { data: employeesForBirthdays },
   ] = await Promise.all([
-    supabase.from('leaves').select('start_date').eq('leave_type', 'sick').gte('start_date', sixMonthsAgoStr),
+    supabase.from('leaves').select('leave_type').gte('start_date', sixMonthsAgoStr),
     supabase.from('meetings').select('id, title, scheduled_at').gte('scheduled_at', now.toISOString()).order('scheduled_at').limit(4),
     supabase.from('employees').select('first_name, last_name, position, date_of_birth, profile_photo_url').eq('status', 'active'),
   ]);
 
-  // Sick leave by month
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const sickMap: Record<string, number> = {};
+  // Leaves by type for the pie chart
+  const leafCounts: Record<string, number> = {};
   (sickLeaves || []).forEach(l => {
-    const month = format(new Date(l.start_date + '-01'.slice(l.start_date.length < 8 ? 0 : 3)), 'MMM');
-    const key = format(new Date(l.start_date.slice(0, 7) + '-01'), 'MMM');
-    sickMap[key] = (sickMap[key] || 0) + 1;
+    const type = l.leave_type;
+    leafCounts[type] = (leafCounts[type] || 0) + 1;
   });
-  const sickLeaveByMonth = last6Months.map(m => ({
-    month: format(new Date(m + '-01'), 'MMM'),
-    count: sickMap[format(new Date(m + '-01'), 'MMM')] || 0,
+  const leavesByType = Object.entries(leafCounts).map(([name, count]) => ({
+    name,
+    count
   }));
 
   // Events
@@ -108,7 +106,7 @@ export default async function AdminDashboardPage() {
     <ModernDashboard
       profile={adminProfile}
       payrollByMonth={payrollByMonth}
-      sickLeaveByMonth={sickLeaveByMonth}
+      leavesByType={leavesByType}
       events={events}
       birthdays={birthdays}
     />

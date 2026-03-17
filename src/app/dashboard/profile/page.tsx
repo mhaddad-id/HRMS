@@ -1,14 +1,14 @@
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
-import { User, Mail, Shield, Calendar, MapPin, Phone } from 'lucide-react';
+import { Mail, Shield, Calendar, Phone } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@radix-ui/react-dropdown-menu';
+import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { ResetPasswordForm } from './reset-password-form';
+import { ProfileAvatarUpdate } from '@/components/dashboard/profile-avatar-update';
 
 export default async function ProfilePage() {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -24,7 +24,15 @@ export default async function ProfilePage() {
 
     if (!user) return null;
 
-    const initials = (user.user_metadata?.full_name || user.email || 'U').slice(0, 2).toUpperCase();
+    // Fetch linked employee record
+    const { data: employee } = await supabase
+        .from('employees')
+        .select('phone, profile_photo_url, first_name, last_name')
+        .eq('user_id', user.id)
+        .single();
+
+    const fullName = employee ? `${employee.first_name} ${employee.last_name}` : (user.user_metadata?.full_name || 'User');
+    const initials = fullName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
     const role = user.user_metadata?.role || 'Employee';
     const roleLabel = role.replace('_', ' ');
 
@@ -42,14 +50,12 @@ export default async function ProfilePage() {
                 <Card className="lg:col-span-1 border-border/50 shadow-sm hover:shadow-md transition-shadow">
                     <CardContent className="pt-6">
                         <div className="flex flex-col items-center text-center space-y-4">
-                            <Avatar className="h-24 w-24 border-4 border-background shadow-xl">
-                                <AvatarImage src={user.user_metadata?.avatar_url} />
-                                <AvatarFallback className="text-2xl bg-primary/10 text-primary">
-                                    {initials}
-                                </AvatarFallback>
-                            </Avatar>
+                            <ProfileAvatarUpdate
+                                initialUrl={employee?.profile_photo_url || user.user_metadata?.avatar_url}
+                                initials={initials}
+                            />
                             <div className="space-y-1">
-                                <h2 className="text-xl font-bold">{user.user_metadata?.full_name || 'User'}</h2>
+                                <h2 className="text-xl font-bold">{fullName}</h2>
                                 <Badge variant="secondary" className="capitalize">
                                     {roleLabel}
                                 </Badge>
@@ -88,7 +94,7 @@ export default async function ProfilePage() {
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium text-muted-foreground">Full Name</label>
                                 <div className="p-2.5 rounded-md bg-muted/30 border border-border/50 text-sm">
-                                    {user.user_metadata?.full_name || 'Not provided'}
+                                    {fullName}
                                 </div>
                             </div>
                             <div className="space-y-1.5">
@@ -103,23 +109,17 @@ export default async function ProfilePage() {
                                     {user.id.slice(0, 8).toUpperCase()}
                                 </div>
                             </div>
-                        </div>
-
-                        <Separator />
-
-                        <div className="space-y-4">
-                            <h3 className="text-sm font-semibold">Contact Details</h3>
-                            <div className="grid gap-4 md:grid-cols-2">
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <Phone className="h-4 w-4" />
-                                    <span>Not provided</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <MapPin className="h-4 w-4" />
-                                    <span>Not provided</span>
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-semibold">Contact Details</h3>
+                                <div className="grid gap-4 md:grid-cols-2">
+                                    <div className="flex items-center gap-2 text-sm text-foreground bg-muted/30 p-2.5 rounded-md border border-border/50">
+                                        <Phone className="h-4 w-4 text-muted-foreground" />
+                                        <span>{employee?.phone || 'Not provided'}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+
 
                         <Separator />
 

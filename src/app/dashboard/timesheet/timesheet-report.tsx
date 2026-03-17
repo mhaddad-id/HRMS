@@ -53,7 +53,7 @@ export function TimesheetReport({
 
   const isWeekend = (d: Date) => {
     const dow = d.getUTCDay();
-    return dow === 5 || dow === 6; // Fri/Sat like screenshot
+    return dow === 6 || dow === 0; // Sa/Su
   };
 
   const toHHMM = (value: string | null) => {

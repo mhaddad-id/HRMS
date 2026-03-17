@@ -60,8 +60,8 @@ const navItems: { href: string; label: string; icon: React.ElementType; roles?: 
 ];
 
 const ROLE_COLORS: Record<string, string> = {
-  admin: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
-  hr_manager: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  admin: 'bg-emerald-600/10 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300',
+  hr_manager: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
   employee: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
 };
 
@@ -324,13 +324,6 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
                     <User className="mr-2 h-4 w-4" />
                     Profile
                   </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                  className="cursor-pointer rounded-lg"
-                >
-                  {theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
-                  Toggle theme
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   asChild

@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { CalendarPlus, Briefcase, Users, BadgeCheck, Star, HeartPulse, Activity } from "lucide-react";
 import { PayrollChart } from "./payroll-chart";
-import { SickLeaveChart } from "./sick-leave-chart";
+import { LeavesChart } from "./leaves-chart";
 import Image from "next/image";
 
 export interface ModernDashboardProps {
@@ -18,7 +18,7 @@ export interface ModernDashboardProps {
     competenceScore: number;
   } | null;
   payrollByMonth: { month: string; total: number }[];
-  sickLeaveByMonth: { month: string; count: number }[];
+  leavesByType: { name: string; count: number }[];
   events: {
     title: string;
     type: string;
@@ -36,7 +36,7 @@ export interface ModernDashboardProps {
 export function ModernDashboard({
   profile,
   payrollByMonth,
-  sickLeaveByMonth,
+  leavesByType,
   events,
   birthdays,
 }: ModernDashboardProps) {
@@ -169,13 +169,13 @@ export function ModernDashboard({
         </Card>
       </div>
 
-      {/* Charts Row: Payroll + Sick Leave */}
+      {/* Charts Row: Payroll + Leaves */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <PayrollChart data={payrollByMonth} />
         </div>
         <div className="lg:col-span-1">
-          <SickLeaveChart data={sickLeaveByMonth} />
+          <LeavesChart data={leavesByType} />
         </div>
       </div>
 
@@ -186,13 +186,13 @@ export function ModernDashboard({
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-lg font-semibold text-foreground">Events and Meetings</h3>
             <button className="text-xs bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 px-3 py-1.5 rounded-md font-medium flex items-center gap-1 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition">
-              + Add
+              <CalendarPlus size={16} />
             </button>
           </div>
           <div className="space-y-4">
             {events.map((evt, idx) => (
               <div key={idx} className="flex items-start gap-4">
-                <div className="mt-0.5 flex-shrink-0 h-9 w-9 rounded-xl bg-muted flex items-center justify-center text-muted-foreground border">
+                <div className="mt-0.5 flex-shrink-0 h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground border">
                   <CalendarPlus size={16} />
                 </div>
                 <div className="flex-1 min-w-0">
