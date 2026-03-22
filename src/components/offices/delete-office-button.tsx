@@ -35,11 +35,12 @@ export function DeleteOfficeButton({ id }: DeleteOfficeButtonProps) {
       <Button
         variant="ghost"
         size="icon"
-        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+        className="h-9 w-9 text-muted-foreground hover:text-white hover:bg-destructive rounded-xl transition-all"
         onClick={() => setOpen(true)}
       >
         <Trash2 className="w-4 h-4" />
       </Button>
+
 
       <ConfirmDialog
         open={open}

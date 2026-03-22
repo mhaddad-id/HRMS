@@ -2,18 +2,14 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Users, Briefcase, Calendar, BarChart3, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Logo } from '@/components/logo';
 
 export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col bg-background font-sans selection:bg-primary/20">
       {/* Navbar */}
       <header className="px-6 relative z-50 py-4 flex items-center justify-between border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0">
-        <div className="flex items-center gap-2">
-          <div className="bg-primary/10 text-primary p-2 rounded-xl flex items-center justify-center">
-            <Users className="w-5 h-5" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-foreground">HRMS Core</span>
-        </div>
+        <Logo text="HRMS Core" />
         <div className="flex items-center gap-3">
           <Button asChild className="rounded-full px-6 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow">
             <Link href="/login">Sign in</Link>

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export interface PayrollRow {
   id: string;
+  employee_code?: string;
   name: string;
   position: string;
   worked_days: number;
@@ -30,7 +31,7 @@ export async function getMonthlyPayrollData(
   // 1. Fetch Employees
   let empQuery = supabase
     .from('employees')
-    .select('id, first_name, last_name, position, salary, currency, office:offices!inner(id, name)')
+    .select('id, employee_code, first_name, last_name, position, salary, currency, office:offices!inner(id, name)')
     .eq('status', 'active');
 
   if (office && office !== 'all') {
@@ -86,6 +87,7 @@ export async function getMonthlyPayrollData(
 
     return {
       id: emp.id,
+      employee_code: emp.employee_code,
       name: `${emp.first_name} ${emp.last_name}`,
       position: emp.position,
       worked_days: workedDaysCount,

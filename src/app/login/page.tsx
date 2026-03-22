@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { SignInForm } from './sign-in-form';
 import { LoginMessages } from './login-messages';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Users } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Logo } from '@/components/logo';
 
 export default function LoginPage({
   searchParams,
@@ -16,18 +16,13 @@ export default function LoginPage({
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[100px] -z-10 pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-secondary/20 rounded-full blur-[80px] -z-10 pointer-events-none" />
 
-      <Link href="/" className="absolute top-8 left-8 flex items-center gap-2 group">
-        <div className="bg-primary/10 text-primary p-2 rounded-xl group-hover:bg-primary/20 transition-colors">
-          <Users className="w-5 h-5" />
-        </div>
-        <span className="font-semibold text-lg hover:text-primary transition-colors">HRMS</span>
+      <Link href="/" className="absolute top-8 left-8">
+        <Logo size={24} />
       </Link>
 
       <Card className="w-full max-w-md shadow-2xl shadow-primary/5 border-border/50">
         <CardHeader className="space-y-2 text-center pb-6">
-          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2 text-primary">
-            <Users className="w-6 h-6" />
-          </div>
+          <Logo size={40} showText={false} className="mx-auto mb-2" />
           <CardTitle className="text-2xl font-bold tracking-tight">Welcome back</CardTitle>
           <CardDescription className="text-base text-muted-foreground">
             Sign in to your HR management dashboard

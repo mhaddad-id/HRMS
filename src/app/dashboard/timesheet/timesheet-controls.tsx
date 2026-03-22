@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { MonthPicker } from '@/components/ui/month-picker';
 
 export interface TimesheetEmployeeOption {
   id: string;
@@ -66,20 +67,17 @@ export function TimesheetControls({
 
   return (
     <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between print:hidden">
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="flex flex-wrap items-end gap-2">
         <div className="space-y-1">
-          <div className="text-xs font-medium text-muted-foreground">Month</div>
-          <Input
-            type="month"
+          <div className="text-xs font-medium text-foreground/60">Month</div>
+          <MonthPicker
             value={month}
-            onChange={(e) => setParams({ month: e.target.value })}
-            className="w-[11rem]"
+            onValueChangeAction={(val) => setParams({ month: val })}
           />
         </div>
-
         {showOffices && (
           <div className="space-y-1">
-            <div className="text-xs font-medium text-muted-foreground">Office</div>
+            <div className="text-xs font-medium text-foreground/60">Office</div>
             <Select
               value={officeId ?? 'all'}
               onValueChange={(v) => setParams({ office: v === 'all' ? undefined : v })}
@@ -98,9 +96,8 @@ export function TimesheetControls({
             </Select>
           </div>
         )}
-
         <div className="space-y-1">
-          <div className="text-xs font-medium text-muted-foreground">Employee</div>
+          <div className="text-xs font-medium text-foreground/60">Employee</div>
           <Select
             value={employeeId ?? ''}
             onValueChange={(v) => setParams({ employee: v || undefined })}

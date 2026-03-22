@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { employeeSchema, type EmployeeFormValues } from '@/lib/validations/employee';
 import type { UserRole } from '@/lib/database.types';
+import { sendWelcomeEmail } from './emails';
 
 export async function createEmployee(formData: FormData) {
   const raw = Object.fromEntries(formData.entries());
@@ -89,12 +90,28 @@ export async function createEmployee(formData: FormData) {
     employeePayload[field] = (typeof val === 'string' && val.trim() === '') ? null : val;
   });
 
-  const { error: insertError } = await admin.from('employees').insert(employeePayload);
+  const { data: employeeData, error: insertError } = await admin
+    .from('employees')
+    .insert(employeePayload)
+    .select('first_name, email, employee_code')
+    .single();
 
   if (insertError) {
     // Attempt rollback
     await admin.auth.admin.deleteUser(userId);
     return { error: 'Failed to create employee record: ' + insertError.message };
+  }
+
+  // 4. Send Welcome Email
+  try {
+    await sendWelcomeEmail({
+      to: employeeData.email,
+      firstName: employeeData.first_name,
+      employeeCode: employeeData.employee_code,
+    });
+  } catch (emailError) {
+    // We don't rollback if email fails, but we log it
+    console.error('Failed to send welcome email:', emailError);
   }
 
   revalidatePath('/dashboard/employees');

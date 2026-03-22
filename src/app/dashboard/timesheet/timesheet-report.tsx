@@ -125,13 +125,13 @@ export function TimesheetReport({
   const cellClass = (d: Date) => {
     const gray = isAfterEndingDate(d);
     const weekend = isWeekend(d);
-    return `border border-border/80 px-2 py-2 text-center text-[11px] leading-none ${gray ? 'bg-zinc-200 text-zinc-400' : weekend ? 'bg-yellow-200/70' : 'bg-background'}`;
+    return `border border-border/80 px-2 py-2 text-center text-[11px] leading-none ${gray ? 'bg-zinc-200 text-zinc-400' : weekend ? 'bg-emerald-100 dark:bg-emerald-800/30' : 'bg-background'}`;
   };
 
   const headerCellClass = (d: Date) => {
     const gray = isAfterEndingDate(d);
     const weekend = isWeekend(d);
-    return `border border-border/80 px-2 py-2 text-center text-[11px] font-semibold ${gray ? 'bg-zinc-200 text-zinc-400' : weekend ? 'bg-yellow-200/70' : 'bg-muted/60'}`;
+    return `border border-border/80 px-2 py-2 text-center text-[11px] font-semibold ${gray ? 'bg-zinc-200 text-zinc-400' : weekend ? 'bg-emerald-100 dark:bg-emerald-800/30' : 'bg-muted/60'}`;
   };
 
   return (

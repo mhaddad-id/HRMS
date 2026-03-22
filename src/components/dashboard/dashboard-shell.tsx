@@ -20,6 +20,7 @@ import {
   PanelLeftOpen,
   User,
   Building,
+  FileText,
 } from 'lucide-react';
 import { signOut } from '@/app/actions/auth';
 import { Button } from '@/components/ui/button';
@@ -33,7 +34,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useTheme } from '@/components/theme-provider';
 import { cn } from '@/lib/utils';
+import { Logo } from '@/components/logo';
 import type { UserRole } from '@/lib/database.types';
+import { useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { fetchUnreadCount, markNotificationsAsRead } from '@/app/actions/notifications';
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -51,11 +56,12 @@ const navItems: { href: string; label: string; icon: React.ElementType; roles?: 
   { href: '/dashboard/admin/users', label: 'Users', icon: Users, roles: ['admin'] },
   { href: '/dashboard/employees', label: 'Employees', icon: Users, roles: ['admin', 'hr_manager'] },
   { href: '/dashboard/leave', label: 'Leave', icon: Calendar },
-  { href: '/dashboard/payroll', label: 'Payroll', icon: DollarSign, roles: ['admin', 'hr_manager'] },
-  { href: '/dashboard/performance', label: 'Performance', icon: ClipboardList, roles: ['admin', 'hr_manager'] },
   { href: '/dashboard/timesheet', label: 'Timesheet', icon: Clock },
+  { href: '/dashboard/payslip', label: 'Payslip', icon: FileText },
+  { href: '/dashboard/payroll', label: 'Payroll', icon: DollarSign, roles: ['admin', 'hr_manager'] },
   { href: '/dashboard/offices', label: 'Offices', icon: Building, roles: ['admin', 'hr_manager'] },
   { href: '/dashboard/meetings', label: 'Meetings', icon: CalendarDays },
+  { href: '/dashboard/performance', label: 'Performance', icon: ClipboardList, roles: ['admin', 'hr_manager'] },
   { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
 ];
 
@@ -77,6 +83,58 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
   const roleLabel = role.replace('_', ' ');
   const roleBadge = ROLE_COLORS[role] ?? ROLE_COLORS.employee;
 
+  const [notificationCount, setNotificationCount] = useState(0);
+
+  // Initial fetch and Realtime subscription
+  useEffect(() => {
+    const supabase = createClient();
+
+    // 1. Initial Fetch
+    const getInitialCount = async () => {
+      const count = await fetchUnreadCount(user.id);
+      setNotificationCount(count);
+    };
+    getInitialCount();
+
+    // 2. Realtime subscription
+    const channel = supabase
+      .channel('realtime_notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen for inserts and updates
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Realtime payload received:', payload);
+          if (payload.eventType === 'INSERT') {
+            // Instantly increase count when a new push arrives
+            setNotificationCount((prev) => prev + 1);
+          } else if (payload.eventType === 'UPDATE') {
+            // If marked as read from another tab
+            if (payload.new && payload.new.read_at && (!payload.old || !payload.old.read_at)) {
+              setNotificationCount((prev) => Math.max(0, prev - 1));
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user.id]);
+
+  // Mark as read when on notifications page
+  useEffect(() => {
+    if (pathname === '/dashboard/notifications' && notificationCount > 0) {
+      markNotificationsAsRead(user.id);
+      setNotificationCount(0);
+    }
+  }, [pathname, user.id, notificationCount]);
+
   /* ── page title from pathname ─────────────────── */
   const currentPage =
     filteredNav.find(
@@ -97,7 +155,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
       <aside
         className={cn(
           'sidebar-transition fixed md:relative z-40 flex flex-col h-screen shrink-0',
-          'border-r border-sidebar-border bg-sidebar text-sidebar-foreground',
+          'border-r border-sidebar-border bg-sidebar text-sidebar-foreground print:hidden',
           /* desktop collapsed / expanded */
           sidebarOpen ? 'md:w-[260px]' : 'md:w-[68px]',
           /* mobile: slide-in drawer */
@@ -109,19 +167,21 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
         <div
           className={cn(
             'h-16 flex items-center border-b border-sidebar-border shrink-0',
-            sidebarOpen ? 'px-5 gap-3' : 'px-0 justify-center'
+            sidebarOpen ? 'px-5' : 'px-0 justify-center'
           )}
         >
           <Link
             href="/dashboard"
-            className="flex items-center gap-3 font-bold text-lg tracking-tight hover:opacity-80 transition-opacity"
+            className="flex items-center group"
           >
-            <div className="shrink-0 bg-sidebar-primary text-sidebar-primary-foreground p-2 rounded-xl flex items-center justify-center shadow-md shadow-sidebar-primary/30">
-              <Users className="w-4 h-4" />
-            </div>
-            {sidebarOpen && (
-              <span className="label-transition opacity-100">HRMS</span>
-            )}
+            <Logo
+              showText={sidebarOpen}
+              size={sidebarOpen ? 24 : 32}
+              className={cn(
+                "transition-all duration-300",
+                !sidebarOpen && "gap-0"
+              )}
+            />
           </Link>
         </div>
 
@@ -249,7 +309,7 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
       <main className="flex-1 flex flex-col min-w-0 bg-background h-screen overflow-hidden">
 
         {/* Top header */}
-        <header className="h-16 shrink-0 border-b border-border/50 bg-background/80 backdrop-blur-md flex items-center px-4 md:px-6 gap-4 sticky top-0 z-20">
+        <header className="h-16 shrink-0 border-b border-border/50 bg-background/80 backdrop-blur-md flex items-center px-4 md:px-6 gap-4 sticky top-0 z-20 print:hidden">
           {/* Sidebar toggle */}
           <Button
             variant="ghost"
@@ -293,11 +353,16 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent"
+              className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent relative"
               asChild
             >
               <Link href="/dashboard/notifications" aria-label="Notifications">
                 <Bell className="h-4 w-4" />
+                {notificationCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white border-2 border-background">
+                    {notificationCount > 9 ? '9+' : notificationCount}
+                  </span>
+                )}
               </Link>
             </Button>
 

@@ -1,90 +1,50 @@
 import { getOffices } from '@/app/actions/offices';
 import { CreateOfficeDialog } from '@/components/offices/create-office-dialog';
-import { EditOfficeDialog } from '@/components/offices/edit-office-dialog';
-import { DeleteOfficeButton } from '@/components/offices/delete-office-button';
-import { OfficePermissions } from '@/components/offices/office-permissions';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building, MapPin, Clock } from 'lucide-react';
+import { OfficesSearch } from '@/components/offices/offices-search';
+import { Building2, MapPin, Globe } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 export default async function OfficesPage() {
   const offices = await getOffices();
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Offices</h2>
-          <p className="text-muted-foreground">
-            Manage your company locations, working hours, and office-level permissions.
-          </p>
+    <div className="flex flex-col gap-6 h-full p-6 bg-muted/30 fade-in">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl shadow-sm border border-emerald-200/50 dark:border-emerald-800/50">
+            <Building2 className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+              Offices
+            </h1>
+            <p className="text-muted-foreground font-medium">Manage company locations and workplace settings</p>
+          </div>
         </div>
         <CreateOfficeDialog />
       </div>
 
-      <Card className="border-border/50 shadow-sm overflow-hidden">
-        <CardHeader className="bg-muted/30 pb-4">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Building className="w-5 h-5 text-primary" />
-            Office Locations
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent text-muted-foreground/70 uppercase text-[11px] tracking-wider font-bold">
-                <TableHead className="pl-6 h-12">Office Name</TableHead>
-                <TableHead className="h-12">Working Hours</TableHead>
-                <TableHead className="h-12">Address</TableHead>
-                <TableHead className="text-right pr-6 h-12">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {offices.map((office) => (
-                <TableRow key={office.id} className="group hover:bg-muted/30 transition-colors">
-                  <TableCell className="font-semibold pl-6 py-4">{office.name}</TableCell>
-                  <TableCell className="py-4">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                      {office.working_hours_start?.slice(0, 5) || '09:00'} - {office.working_hours_end?.slice(0, 5) || '17:00'}
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <div className="flex items-start gap-2 text-sm text-muted-foreground max-w-[300px] truncate">
-                      <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                      {office.address || 'No address provided'}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right pr-6 py-4">
-                    <div className="flex items-center justify-end gap-1">
-                      <OfficePermissions office={office} />
-                      <EditOfficeDialog office={office} />
-                      <DeleteOfficeButton id={office.id} />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {offices.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-12">
-                    <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                      <Building className="w-8 h-8 opacity-20" />
-                      <p>No offices found. Create one to get started.</p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="rounded-2xl shadow-sm border-emerald-100/50 hover:border-emerald-200 transition-all group overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
+            <Building2 className="h-16 w-16" />
+          </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-black uppercase tracking-widest text-muted-foreground">Total Offices</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-4xl font-extrabold text-foreground tracking-tighter tabular-nums">{offices.length}</div>
+            <p className="text-[10px] text-emerald-600 font-bold mt-1 uppercase tracking-tight">Active Locations</p>
+          </CardContent>
+        </Card>
+
+      </div>
+
+      <div className="flex-1">
+        <OfficesSearch offices={offices} />
+      </div>
     </div>
   );
 }
+

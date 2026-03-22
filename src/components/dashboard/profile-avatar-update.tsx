@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Camera, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ interface ProfileAvatarUpdateProps {
 export function ProfileAvatarUpdate({ initialUrl, initials }: ProfileAvatarUpdateProps) {
   const [url, setUrl] = useState(initialUrl);
   const [isUploading, setIsUploading] = useState(false);
+  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -43,6 +45,7 @@ export function ProfileAvatarUpdate({ initialUrl, initials }: ProfileAvatarUpdat
       } else if (result.success && result.url) {
         setUrl(result.url);
         toast({ title: 'Success', description: 'Profile photo updated successfully.' });
+        router.refresh();
       }
     } catch (error) {
       toast({ title: 'Error', description: 'An unexpected error occurred.', variant: 'destructive' });

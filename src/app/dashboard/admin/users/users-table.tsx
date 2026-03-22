@@ -11,6 +11,16 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { Building2, Search, User as UserIcon } from 'lucide-react';
 
@@ -19,10 +29,11 @@ type UserWithEmployee = User & {
         id: string;
         first_name: string;
         last_name: string;
+        profile_photo_url?: string | null;
         employee_code: string | null;
         position: string | null;
         office: string | null;
-        supervisor_record?: { id: string; first_name: string; last_name: string } | null;
+        supervisor_record?: { id: string; first_name: string; last_name: string; profile_photo_url?: string | null } | null;
     } | null;
 };
 
@@ -30,19 +41,19 @@ interface UsersTableProps {
     users: UserWithEmployee[];
 }
 
-const ROLE_COLORS: Record<string, string> = {
-    admin: 'bg-emerald-600/10 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300',
-    hr_manager: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
-    employee: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
-};
-
 const ROLE_LABELS: Record<string, string> = {
     admin: 'Admin',
     hr_manager: 'HR Manager',
     employee: 'Employee',
 };
 
-function UserAvatar({ name, email }: { name?: string | null; email: string }) {
+const ROLE_BADGE_VARIANTS: Record<string, string> = {
+    admin: 'bg-red-600/10 text-red-700 dark:bg-red-500/20 dark:text-red-300 border-red-200/50',
+    hr_manager: 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300 border-sky-200/50',
+    employee: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 border-emerald-200/50',
+};
+
+function UserAvatar({ name, email, avatar_url }: { name?: string | null; email: string; avatar_url?: string | null }) {
     const displayName = name || email;
     const initials = displayName.slice(0, 2).toUpperCase();
     const colors = [
@@ -54,9 +65,12 @@ function UserAvatar({ name, email }: { name?: string | null; email: string }) {
     ];
     const colorIdx = displayName.charCodeAt(0) % colors.length;
     return (
-        <div className={`h-9 w-9 shrink-0 rounded-full flex items-center justify-center text-xs font-bold ${colors[colorIdx]}`}>
-            {initials}
-        </div>
+        <Avatar className="h-9 w-9 border border-border">
+            <AvatarImage src={avatar_url ?? undefined} className="object-cover" />
+            <AvatarFallback className={`text-xs font-bold ${colors[colorIdx]}`}>
+                {initials}
+            </AvatarFallback>
+        </Avatar>
     );
 }
 
@@ -134,98 +148,105 @@ export function UsersTable({ users }: UsersTableProps) {
             </div>
 
             <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
-                <div className="relative w-full overflow-x-auto">
-                    <table className="w-full border-collapse text-sm">
-                        <thead>
-                            <tr className="border-b bg-muted/50">
-                                {['Code', 'User', 'Position', 'Supervisor', 'Office', 'Role'].map((col) => (
-                                    <th
-                                        key={col}
-                                        className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap"
-                                    >
-                                        {col}
-                                    </th>
-                                ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredUsers.map((user) => {
-                                const emp = user.employee;
-                                const supervisorName = emp?.supervisor_record
-                                    ? `${emp.supervisor_record.first_name} ${emp.supervisor_record.last_name}`
-                                    : null;
+                <Table>
+                    <TableHeader>
+                        <TableRow className="bg-muted/50 hover:bg-muted/50">
+                            {['Code', 'User', 'Position', 'Supervisor', 'Office', 'Role'].map((col) => (
+                                <TableHead
+                                    key={col}
+                                    className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap"
+                                >
+                                    {col}
+                                </TableHead>
+                            ))}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredUsers.map((user) => {
+                            const emp = user.employee;
+                            const supervisorName = emp?.supervisor_record
+                                ? `${emp.supervisor_record.first_name} ${emp.supervisor_record.last_name}`
+                                : null;
 
-                                return (
-                                    <tr key={user.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                                        {/* Code */}
-                                        <td className="px-4 py-3 align-middle">
-                                            <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded text-muted-foreground">
-                                                {emp?.employee_code || '—'}
-                                            </span>
-                                        </td>
+                            return (
+                                <TableRow key={user.id} className="last:border-0">
+                                    {/* Code */}
+                                    <TableCell className="px-4 py-3">
+                                        <span className="text-sm font-medium">{emp?.employee_code || '—'}</span>
+                                    </TableCell>
 
-                                        {/* User (avatar + email) */}
-                                        <td className="px-4 py-3 align-middle">
-                                            <div className="flex items-center gap-2.5">
-                                                <UserAvatar name={user.full_name} email={user.email} />
-                                                <div>
-                                                    <p className="font-medium text-sm leading-tight">{user.full_name || '—'}</p>
-                                                    <p className="text-xs text-muted-foreground leading-tight truncate max-w-[180px]">{user.email}</p>
-                                                </div>
+                                    {/* User (avatar + email) */}
+                                    <TableCell className="px-4 py-3">
+                                        <div className="flex items-center gap-2.5">
+                                            <UserAvatar
+                                                name={user.full_name}
+                                                email={user.email}
+                                                avatar_url={user.avatar_url || emp?.profile_photo_url}
+                                            />
+                                            <div>
+                                                <p className="font-medium text-sm leading-tight">{user.full_name || '—'}</p>
+                                                <p className="text-xs text-muted-foreground leading-tight truncate max-w-[180px]">{user.email}</p>
                                             </div>
-                                        </td>
+                                        </div>
+                                    </TableCell>
 
-                                        {/* Position */}
-                                        <td className="px-4 py-3 align-middle">
-                                            <span className="text-sm">{emp?.position ?? <span className="text-muted-foreground text-xs">—</span>}</span>
-                                        </td>
+                                    {/* Position */}
+                                    <TableCell className="px-4 py-3">
+                                        <span className="text-sm font-medium">{emp?.position ?? <span className="text-muted-foreground text-xs">—</span>}</span>
+                                    </TableCell>
 
-                                        {/* Supervisor */}
-                                        <td className="px-4 py-3 align-middle">
-                                            {supervisorName ? (
+                                    {/* Supervisor */}
+                                    <TableCell className="px-4 py-3">
+                                        {supervisorName ? (
+                                            <div className="flex items-center gap-2">
+                                                <UserAvatar
+                                                    name={supervisorName}
+                                                    email=""
+                                                    avatar_url={emp?.supervisor_record?.profile_photo_url}
+                                                />
                                                 <span className="text-sm">{supervisorName}</span>
-                                            ) : (
-                                                <span className="text-muted-foreground text-xs">—</span>
-                                            )}
-                                        </td>
-                                        {/* Office */}
-                                        <td className="px-4 py-3 align-middle">
-                                            {emp?.office ? (
-                                                <div className="flex items-center gap-1.5 text-sm">
-                                                    <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                                    {emp.office}
-                                                </div>
-                                            ) : (
-                                                <span className="text-muted-foreground text-xs">—</span>
-                                            )}
-                                        </td>
-                                        {/* Role */}
-                                        <td className="px-4 py-3 align-middle">
-                                            <Select
-                                                disabled={loadingIds.has(user.id)}
-                                                value={user.role}
-                                                onValueChange={(val) => handleRoleChange(user.id, val)}
-                                            >
-                                                <SelectTrigger className="h-8 w-[140px] text-xs">
-                                                    <SelectValue>
-                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${ROLE_COLORS[user.role] ?? ROLE_COLORS.employee}`}>
-                                                            {ROLE_LABELS[user.role] ?? user.role}
-                                                        </span>
-                                                    </SelectValue>
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="admin">Admin</SelectItem>
-                                                    <SelectItem value="hr_manager">HR Manager</SelectItem>
-                                                    <SelectItem value="employee">Employee</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
-                </div>
+                                            </div>
+                                        ) : (
+                                            <span className="text-muted-foreground text-xs">—</span>
+                                        )}
+                                    </TableCell>
+                                    {/* Office */}
+                                    <TableCell className="px-4 py-3">
+                                        {emp?.office ? (
+                                            <div className="flex items-center gap-1.5 text-sm">
+                                                <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                                {emp.office}
+                                            </div>
+                                        ) : (
+                                            <span className="text-muted-foreground text-xs">—</span>
+                                        )}
+                                    </TableCell>
+                                    {/* Role */}
+                                    <TableCell className="px-4 py-3">
+                                        <Select
+                                            disabled={loadingIds.has(user.id)}
+                                            value={user.role}
+                                            onValueChange={(val) => handleRoleChange(user.id, val)}
+                                        >
+                                            <SelectTrigger className="h-8 w-[140px] text-xs shadow-none border-border bg-transparent">
+                                                <SelectValue>
+                                                    <Badge className={`text-[10px] uppercase font-bold px-2 py-0 border ${ROLE_BADGE_VARIANTS[user.role] ?? ROLE_BADGE_VARIANTS.employee}`}>
+                                                        {ROLE_LABELS[user.role] ?? user.role}
+                                                    </Badge>
+                                                </SelectValue>
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-xl">
+                                                <SelectItem value="admin" className="rounded-lg text-xs">Admin</SelectItem>
+                                                <SelectItem value="hr_manager" className="rounded-lg text-xs">HR Manager</SelectItem>
+                                                <SelectItem value="employee" className="rounded-lg text-xs">Employee</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
+                    </TableBody>
+                </Table>
             </div>
         </div>
     );

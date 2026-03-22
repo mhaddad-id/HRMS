@@ -17,7 +17,7 @@ export async function resetPassword(formData: FormData) {
   }
 
   const supabase = await createClient();
-  
+
   const { error } = await supabase.auth.updateUser({
     password: newPassword,
   });
@@ -63,7 +63,7 @@ export async function updateProfilePhoto(formData: FormData) {
     const { error: adminUploadError } = await admin.storage
       .from('hrms-assets')
       .upload(filePath, file);
-    
+
     if (adminUploadError) {
       return { error: 'Upload failed: ' + adminUploadError.message };
     }
@@ -74,7 +74,7 @@ export async function updateProfilePhoto(formData: FormData) {
     .from('hrms-assets')
     .getPublicUrl(filePath);
 
-  // 4. Update employee record using admin client to bypass DB RLS
+  // 4. Update employee and user record using admin client to bypass DB RLS
   const { error: updateError } = await admin
     .from('employees')
     .update({ profile_photo_url: publicUrl })
@@ -83,6 +83,12 @@ export async function updateProfilePhoto(formData: FormData) {
   if (updateError) {
     return { error: 'Failed to update profile: ' + updateError.message };
   }
+
+  // Also update users table for consistency
+  await admin
+    .from('users')
+    .update({ avatar_url: publicUrl })
+    .eq('id', user.id);
 
   revalidatePath('/dashboard/profile');
   return { success: true, url: publicUrl };

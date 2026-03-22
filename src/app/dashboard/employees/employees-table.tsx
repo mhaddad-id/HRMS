@@ -13,6 +13,16 @@ import {
 import { Ban, MoreHorizontal, Pencil, RotateCcw, Trash2, Search, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   Select,
   SelectContent,
@@ -37,12 +47,12 @@ import { EmployeeForm } from './employee-form';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
-import type { Employee } from '@/lib/database.types';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import type { Employee } from '@/lib/database.types';
 
 type EmployeeRow = Omit<Employee, 'supervisor' | 'office'> & {
-  supervisor_record?: { id: string; first_name: string; last_name: string } | null;
+  supervisor_record?: { id: string; first_name: string; last_name: string; profile_photo_url?: string | null } | null;
   supervisor?: string | null;
   office?: { id: string; name: string } | null;
 };
@@ -57,19 +67,19 @@ const columnHelper = createColumnHelper<EmployeeRow>();
 function StatusBadge({ status }: { status: string }) {
   const isActive = status === 'active';
   return (
-    <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${isActive
-        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-        : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
-        }`}
+    <Badge
+      variant={isActive ? 'default' : 'secondary'}
+      className={isActive
+        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-100 border-emerald-200'
+        : 'text-red-500 dark:text-red-400 bg-red-300 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-100 border-red-200'}
     >
-      <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-zinc-400'}`} />
+      <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
       {status.charAt(0).toUpperCase() + status.slice(1)}
-    </span>
+    </Badge>
   );
 }
 
-function EmployeeAvatar({ first_name, last_name }: { first_name: string; last_name: string }) {
+function EmployeeAvatar({ first_name, last_name, profile_photo_url }: { first_name: string; last_name: string; profile_photo_url?: string | null }) {
   const initials = `${first_name[0] ?? ''}${last_name[0] ?? ''}`.toUpperCase();
   const colors = [
     'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
@@ -80,9 +90,12 @@ function EmployeeAvatar({ first_name, last_name }: { first_name: string; last_na
   ];
   const colorIdx = (first_name.charCodeAt(0) + last_name.charCodeAt(0)) % colors.length;
   return (
-    <div className={`h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-xs font-bold ${colors[colorIdx]}`}>
-      {initials}
-    </div>
+    <Avatar className="h-8 w-8 border border-border shadow-sm">
+      <AvatarImage src={profile_photo_url ?? undefined} className="object-cover" />
+      <AvatarFallback className={`text-xs font-bold ${colors[colorIdx]}`}>
+        {initials}
+      </AvatarFallback>
+    </Avatar>
   );
 }
 
@@ -108,7 +121,7 @@ export function EmployeesTable({ employees, allOffices }: EmployeesTableProps) {
         const row = info.row.original;
         return (
           <div className="flex items-center gap-2.5">
-            <EmployeeAvatar first_name={row.first_name} last_name={row.last_name} />
+            <EmployeeAvatar first_name={row.first_name} last_name={row.last_name} profile_photo_url={(row as any).profile_photo_url} />
             <div>
               <p className="font-medium text-sm leading-tight">{info.getValue()}</p>
               <p className="text-xs text-muted-foreground leading-tight">{row.email}</p>
@@ -158,7 +171,24 @@ export function EmployeesTable({ employees, allOffices }: EmployeesTableProps) {
     }, {
       id: 'supervisor',
       header: 'Supervisor',
-      cell: (i) => i.getValue() ?? '—',
+      cell: (i) => {
+        const val = i.getValue();
+        const row = i.row.original;
+        if (!val) return '—';
+        if (row.supervisor_record) {
+          return (
+            <div className="flex items-center gap-2">
+              <EmployeeAvatar
+                first_name={row.supervisor_record.first_name}
+                last_name={row.supervisor_record.last_name}
+                profile_photo_url={row.supervisor_record.profile_photo_url}
+              />
+              <span className="text-sm">{val}</span>
+            </div>
+          );
+        }
+        return <span className="text-sm">{val}</span>;
+      },
       enableGlobalFilter: false,
     }),
     columnHelper.accessor('salary', {
@@ -293,38 +323,33 @@ export function EmployeesTable({ employees, allOffices }: EmployeesTableProps) {
             <p className="text-sm text-muted-foreground">Try adjusting your search or add a new employee.</p>
           </div>
         ) : (
-          <div className="relative w-full overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                {table.getHeaderGroups().map((hg) => (
-                  <tr key={hg.id} className="border-b bg-muted/50">
-                    {hg.headers.map((h) => (
-                      <th
-                        key={h.id}
-                        className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground whitespace-nowrap"
-                      >
-                        {flexRender(h.column.columnDef.header, h.getContext())}
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody>
-                {table.getRowModel().rows.map((row) => (
-                  <tr
-                    key={row.id}
-                    className="border-b last:border-0 hover:bg-muted/30 transition-colors"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-4 py-3 align-middle whitespace-nowrap">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((hg) => (
+                <TableRow key={hg.id} className="bg-muted/50 hover:bg-muted/50">
+                  {hg.headers.map((h) => (
+                    <TableHead
+                      key={h.id}
+                      className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap"
+                    >
+                      {flexRender(h.column.columnDef.header, h.getContext())}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id} className="px-4 py-3 whitespace-nowrap">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </div>
 

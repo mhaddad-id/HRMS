@@ -10,9 +10,16 @@ import {
   createColumnHelper,
   type ColumnDef,
 } from '@tanstack/react-table';
-import { Search } from 'lucide-react';
-import { formatDate } from '@/lib/utils';
+import { Search, Calendar as CalendarIcon } from 'lucide-react';
+import { formatDate, cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -163,13 +170,29 @@ export function TimesheetView({
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                   <div className="space-y-2">
-                    <Label>Date</Label>
-                    <Input
-                      type="date"
-                      value={date}
-                      onChange={(e) => setDate(e.target.value)}
-                      required
-                    />
+                    <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Work Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full h-12 justify-start text-left font-bold rounded-xl border-muted bg-background transition-all hover:bg-muted/50",
+                            !date && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-3 h-4 w-4 text-emerald-600" />
+                          {date ? format(new Date(date), "PPP") : <span className="text-muted-foreground/60">Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 rounded-2xl shadow-2xl border-emerald-100" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={date ? new Date(date) : undefined}
+                          onSelect={(val) => setDate(val ? format(val, "yyyy-MM-dd") : '')}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -189,14 +212,14 @@ export function TimesheetView({
             </Dialog>
           )}
           {isHR && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0">
               <Select
                 value={(table.getColumn('office')?.getFilterValue() as string) ?? 'all'}
                 onValueChange={(value) =>
                   table.getColumn('office')?.setFilterValue(value === 'all' ? undefined : value)
                 }
               >
-                <SelectTrigger className="w-full sm:w-[180px] h-9">
+                <SelectTrigger className="w-full sm:w-[180px] h-9 rounded-r-none border-r-0 focus:z-10 focus:ring-1 focus:ring-emerald-500">
                   <SelectValue placeholder="All Offices" />
                 </SelectTrigger>
                 <SelectContent>
@@ -215,7 +238,7 @@ export function TimesheetView({
                   placeholder="Search employees..."
                   value={globalFilter}
                   onChange={(e) => setGlobalFilter(e.target.value)}
-                  className="pl-9 h-9 max-w-sm w-full sm:w-[240px]"
+                  className="pl-9 h-9 max-w-sm w-full sm:w-[240px] rounded-l-none focus:z-10 focus:ring-1 focus:ring-emerald-500"
                 />
               </div>
             </div>
@@ -237,15 +260,18 @@ export function TimesheetView({
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.map((row) => (
-              <tr key={row.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                {row.getVisibleCells().map((cell) => (
-                  <td key={cell.id} className="px-4 py-3 align-middle">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
+            {table.getRowModel().rows.map((row) => {
+              const isOffDay = !row.original.clock_in && !row.original.clock_out;
+              return (
+                <tr key={row.id} className={`border-b last:border-0 transition-colors ${isOffDay ? 'bg-emerald-50/50 dark:bg-emerald-800/30' : 'hover:bg-muted/30'}`}>
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="px-4 py-3 align-middle">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         {table.getRowModel().rows.length === 0 && (

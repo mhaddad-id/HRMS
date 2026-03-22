@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,9 +18,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { employeeSchema, type EmployeeFormValues } from '@/lib/validations/employee';
+
 import { createClient } from '@/lib/supabase/client';
 import { createEmployee, updateEmployee } from '@/app/actions/employees';
 import type { Employee } from '@/lib/database.types';
+import { DatePicker } from '@/components/ui/date-picker';
 
 interface EmployeeFormProps {
   employees: Pick<Employee, 'id' | 'first_name' | 'last_name'>[];
@@ -210,7 +214,11 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
         </div>
         <div className="space-y-2">
           <Label>Date of Birth</Label>
-          <Input type="date" {...form.register('date_of_birth')} />
+          <DatePicker
+            date={form.watch('date_of_birth') ? new Date(form.watch('date_of_birth') || '') : undefined}
+            onDateChangeAction={(date: Date | undefined) => form.setValue('date_of_birth', date ? format(date, "yyyy-MM-dd") : '')}
+            placeholder="Select birth date"
+          />
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -340,14 +348,21 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label>Employment Date</Label>
-          <Input type="date" {...form.register('employment_date')} />
+          <DatePicker
+            date={form.watch('employment_date') ? new Date(form.watch('employment_date') || '') : undefined}
+            onDateChangeAction={(date: Date | undefined) => form.setValue('employment_date', date ? format(date, "yyyy-MM-dd") : '')}
+          />
           {form.formState.errors.employment_date?.message && (
             <p className="text-sm text-destructive">{form.formState.errors.employment_date.message}</p>
           )}
         </div>
         <div className="space-y-2">
           <Label>Ending Date</Label>
-          <Input type="date" {...form.register('ending_date')} />
+          <DatePicker
+            date={form.watch('ending_date') ? new Date(form.watch('ending_date') || '') : undefined}
+            onDateChangeAction={(date: Date | undefined) => form.setValue('ending_date', date ? format(date, "yyyy-MM-dd") : '')}
+            placeholder="Optional"
+          />
         </div>
 
       </div>

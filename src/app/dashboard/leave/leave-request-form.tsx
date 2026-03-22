@@ -17,6 +17,8 @@ import {
 } from '@/components/ui/select';
 import { leaveSchema, type LeaveFormValues } from '@/lib/validations/leave';
 import { createClient } from '@/lib/supabase/client';
+import { submitLeaveRequest } from '@/app/actions/leaves';
+import { toast } from '@/hooks/use-toast';
 
 export function LeaveRequestForm({ onSuccess }: { onSuccess?: () => void }) {
   const router = useRouter();
@@ -78,19 +80,24 @@ export function LeaveRequestForm({ onSuccess }: { onSuccess?: () => void }) {
       }
     }
 
-    const { error: e } = await supabase.from('leaves').insert({
-      employee_id: me.id,
-      leave_type: values.leave_type,
-      start_date: values.start_date,
-      end_date: values.end_date,
-      reason: values.reason || null,
-      status: 'pending',
+    const result = await submitLeaveRequest({
+      employeeId: me.id,
+      leaveType: values.leave_type,
+      startDate: values.start_date,
+      endDate: values.end_date,
+      reason: values.reason || undefined,
     });
-    if (e) {
-      setError(e.message);
+
+    if (!result.success) {
+      setError(result.error?.message || 'Failed to submit leave request');
       setLoading(false);
       return;
     }
+
+    toast({
+      title: 'Success!',
+      description: 'Your leave request has been submitted and notifications sent.',
+    });
     setLoading(false);
     router.refresh();
     onSuccess?.();

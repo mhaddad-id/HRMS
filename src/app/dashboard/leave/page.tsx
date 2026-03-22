@@ -45,11 +45,22 @@ export default async function LeavePage({
   }
 
   const rawOffice = typeof searchParams?.office === 'string' ? searchParams.office : (allowedOffices.length > 0 ? 'all' : undefined);
+  const currentMonth = typeof searchParams?.month === 'string' ? searchParams.month : new Date().toISOString().slice(0, 7);
+
 
   const query = supabase
     .from('leaves')
-    .select('*, employee:employees!inner(id, first_name, last_name, employee_code, office:offices(id, name), office_id, supervisor_id, supervisor_record:supervisor_id(id, first_name, last_name))')
+    .select('*, employee:employees!inner(id, first_name, last_name, employee_code, position, office:offices(id, name), office_id, supervisor_id, supervisor_record:supervisor_id(id, first_name, last_name))')
     .order('created_at', { ascending: false });
+
+  if (currentMonth) {
+    const startDate = `${currentMonth}-01`;
+    const [year, monthNum] = currentMonth.split('-').map(Number);
+    const lastDay = new Date(year, monthNum, 0).getDate();
+    const endDate = `${currentMonth}-${lastDay}`;
+    query.gte('start_date', startDate).lte('start_date', endDate);
+  }
+
 
   if (allowedOffices.length > 0 && !rawOffice) {
     // Force the user to select an office first
@@ -103,7 +114,7 @@ export default async function LeavePage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between print:hidden">
         <div>
           <h1 className="text-3xl font-bold">Leave Management</h1>
           <p className="text-muted-foreground">Request and manage leave</p>
@@ -111,9 +122,10 @@ export default async function LeavePage({
         <div className="flex items-center gap-3">
           {allowedOffices.length > 0 && (
             <Suspense fallback={<div>Loading...</div>}>
-              <LeaveControls officeId={rawOffice} offices={allowedOffices} />
+              <LeaveControls officeId={rawOffice} offices={allowedOffices} month={currentMonth} />
             </Suspense>
           )}
+
           {myEmployee && <RequestLeaveButton />}
         </div>
       </div>

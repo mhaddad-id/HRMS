@@ -7,11 +7,15 @@ export async function getOffices() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('offices')
-    .select('*')
+    .select('*, employees(id)')
     .order('name');
 
   if (error) throw new Error(error.message);
-  return data;
+
+  return (data ?? []).map((office) => ({
+    ...office,
+    employee_count: Array.isArray(office.employees) ? office.employees.length : 0,
+  }));
 }
 
 export async function createOffice(formData: {
