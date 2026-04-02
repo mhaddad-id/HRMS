@@ -17,9 +17,9 @@ export function ResetPasswordForm() {
   async function action(formData: FormData) {
     setLoading(true);
     setError(null);
-    
+
     const res = await resetPassword(formData);
-    
+
     setLoading(false);
     if (res?.error) {
       setError(res.error);
@@ -41,28 +41,40 @@ export function ResetPasswordForm() {
           {error}
         </div>
       )}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4">
         <div className="space-y-2">
-          <Label htmlFor="password">New Password</Label>
-          <Input 
-            id="password" 
-            name="password" 
-            type="password" 
-            required 
-            minLength={6} 
-            placeholder="At least 6 characters"
+          <Label htmlFor="currentPassword">Current Password</Label>
+          <Input
+            id="currentPassword"
+            name="currentPassword"
+            type="password"
+            required
+            placeholder="Enter your current password"
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="confirmPassword">Confirm Password</Label>
-          <Input 
-            id="confirmPassword" 
-            name="confirmPassword" 
-            type="password" 
-            required 
-            minLength={6} 
-            placeholder="Confirm new password"
-          />
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="password">New Password</Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              required
+              minLength={6}
+              placeholder="At least 6 characters"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm Password</Label>
+            <Input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              required
+              minLength={6}
+              placeholder="Confirm new password"
+            />
+          </div>
         </div>
       </div>
       <div className="flex justify-end pt-2">

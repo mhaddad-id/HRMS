@@ -174,3 +174,30 @@ export async function updateEmployee(employeeId: string, values: Partial<Employe
   revalidatePath('/dashboard/employees');
   return { success: true };
 }
+
+export async function resetEmployeePassword(employeeId: string) {
+  const admin = createAdminClient();
+
+  // 1. Get user_id from employees table
+  const { data: employee, error: fetchError } = await admin
+    .from('employees')
+    .select('user_id')
+    .eq('id', employeeId)
+    .single();
+
+  if (fetchError || !employee?.user_id) {
+    return { error: 'Failed to find linked user account for this employee.' };
+  }
+
+  // 2. Reset password via Auth Admin
+  const { error: resetError } = await admin.auth.admin.updateUserById(
+    employee.user_id,
+    { password: 'HRMS123' }
+  );
+
+  if (resetError) {
+    return { error: 'Failed to reset password: ' + resetError.message };
+  }
+
+  return { success: true };
+}

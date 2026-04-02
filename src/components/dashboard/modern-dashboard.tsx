@@ -94,7 +94,7 @@ export function ModernDashboard({
                   <BadgeCheck size={15} className="text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Department</p>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">Office</p>
                   <p className="text-sm font-semibold text-foreground">{profile.department}</p>
                 </div>
               </div>

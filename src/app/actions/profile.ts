@@ -5,19 +5,40 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export async function resetPassword(formData: FormData) {
+  const currentPassword = formData.get('currentPassword') as string;
   const newPassword = formData.get('password') as string;
   const confirmPassword = formData.get('confirmPassword') as string;
 
+  if (!currentPassword) {
+    return { error: 'Current password is required.' };
+  }
+
   if (!newPassword || newPassword.length < 6) {
-    return { error: 'Password must be at least 6 characters long.' };
+    return { error: 'New password must be at least 6 characters long.' };
   }
 
   if (newPassword !== confirmPassword) {
-    return { error: 'Passwords do not match.' };
+    return { error: 'New passwords do not match.' };
   }
 
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
+  if (!user || !user.email) {
+    return { error: 'User not found.' };
+  }
+
+  // Verify current password by signing in
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+
+  if (signInError) {
+    return { error: 'Invalid current password.' };
+  }
+
+  // Update password
   const { error } = await supabase.auth.updateUser({
     password: newPassword,
   });

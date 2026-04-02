@@ -50,6 +50,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import type { Employee } from '@/lib/database.types';
+import { resetEmployeePassword } from '@/app/actions/employees';
 
 type EmployeeRow = Omit<Employee, 'supervisor' | 'office'> & {
   supervisor_record?: { id: string; first_name: string; last_name: string; profile_photo_url?: string | null } | null;
@@ -244,7 +245,7 @@ export function EmployeesTable({ employees, allOffices }: EmployeesTableProps) {
               onClick={() => setConfirmReset(row.original.id)}
             >
               <RotateCcw className="mr-2 h-4 w-4" />
-              Reset
+              Reset Password
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive rounded-lg"
@@ -480,19 +481,22 @@ export function EmployeesTable({ employees, allOffices }: EmployeesTableProps) {
         }}
       />
 
-      {/* Confirm Score Reset */}
+      {/* Confirm Password Reset */}
       <ConfirmDialog
         open={!!confirmReset}
         onOpenChangeAction={(o) => { if (!o) setConfirmReset(null); }}
-        title="Reset Scores"
-        description="Are you sure you want to reset annual, sick, and competence scores to 0?"
-        confirmLabel="Reset"
+        title="Reset Password"
+        description="Are you sure you want to reset the password for this employee to 'HRMS123'?"
+        confirmLabel="Reset Password"
         onConfirmAction={async () => {
           if (!confirmReset) return;
-          const supabase = createClient();
-          const { error } = await supabase.from('employees').update({ annual_score: 0, sick_score: 0, competence_score: 0 }).eq('id', confirmReset);
-          if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); return; }
-          toast({ title: 'Success', description: 'Scores reset.' });
+          const res = await resetEmployeePassword(confirmReset);
+          if (res.error) {
+            toast({ title: 'Error', description: res.error, variant: 'destructive' });
+            return;
+          }
+          toast({ title: 'Success', description: 'Password reset to HRMS123.' });
+          setConfirmReset(null);
           router.refresh();
         }}
       />

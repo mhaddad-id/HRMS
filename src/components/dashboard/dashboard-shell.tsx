@@ -21,6 +21,7 @@ import {
   User,
   Building,
   FileText,
+  ShieldCheck,
 } from 'lucide-react';
 import { signOut } from '@/app/actions/auth';
 import { Button } from '@/components/ui/button';
@@ -53,7 +54,7 @@ interface DashboardShellProps {
 
 const navItems: { href: string; label: string; icon: React.ElementType; roles?: UserRole[] }[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/admin/users', label: 'Users', icon: Users, roles: ['admin'] },
+  { href: '/dashboard/admin/users', label: 'Auth & Roles', icon: ShieldCheck, roles: ['admin'] },
   { href: '/dashboard/employees', label: 'Employees', icon: Users, roles: ['admin', 'hr_manager'] },
   { href: '/dashboard/leave', label: 'Leave', icon: Calendar },
   { href: '/dashboard/timesheet', label: 'Timesheet', icon: Clock },

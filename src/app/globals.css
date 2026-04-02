@@ -42,7 +42,7 @@
     --chart-5: 340 75% 55%;
 
     /* Sidebar */
-    --sidebar: oklch(0.99 0.008 160);
+    --sidebar: oklch(98.853% 0.00342 176.357);
     --sidebar-foreground: oklch(15.921% 0.01777 19.165);
     --sidebar-primary: oklch(74.864% 0.21199 148.876);
     --sidebar-primary-foreground: oklch(0.99 0 0);
