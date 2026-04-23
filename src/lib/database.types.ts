@@ -236,6 +236,61 @@ export interface Database {
           }
         ]
       }
+      employee_documents: {
+        Row: {
+          id: string
+          employee_id: string
+          file_name: string
+          file_type: string
+          file_url: string
+          file_size: number
+          mime_type: string | null
+          storage_path: string
+          uploaded_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          employee_id: string
+          file_name: string
+          file_type?: string
+          file_url: string
+          file_size?: number
+          mime_type?: string | null
+          storage_path: string
+          uploaded_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          employee_id?: string
+          file_name?: string
+          file_type?: string
+          file_url?: string
+          file_size?: number
+          mime_type?: string | null
+          storage_path?: string
+          uploaded_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_documents_employee_id_fkey"
+            columns: ["employee_id"]
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employee_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -257,3 +312,4 @@ export type Employee = Database['public']['Tables']['employees']['Row']
 export type User = Database['public']['Tables']['users']['Row']
 export type Office = Database['public']['Tables']['offices']['Row']
 export type Leave = Database['public']['Tables']['leaves']['Row']
+export type EmployeeDocument = Database['public']['Tables']['employee_documents']['Row']

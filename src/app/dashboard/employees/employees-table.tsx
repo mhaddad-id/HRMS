@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { EmployeeDocumentsDialog } from './employee-documents-dialog';
 import {
   useReactTable,
   getCoreRowModel,
@@ -10,7 +11,7 @@ import {
   createColumnHelper,
   type ColumnDef,
 } from '@tanstack/react-table';
-import { Ban, MoreHorizontal, Pencil, RotateCcw, Trash2, Search, Building2 } from 'lucide-react';
+import { Ban, MoreHorizontal, Pencil, RotateCcw, Trash2, Search, Building2, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -109,6 +110,7 @@ export function EmployeesTable({ employees, allOffices }: EmployeesTableProps) {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState<string | null>(null);
   const [confirmStatus, setConfirmStatus] = useState<{ id: string; next: string } | null>(null);
+  const [documentsEmployee, setDocumentsEmployee] = useState<{ id: string; name: string } | null>(null);
 
   // Get unique offices for filter
   const offices = allOffices.map(o => o.name).filter(Boolean).sort();
@@ -214,6 +216,26 @@ export function EmployeesTable({ employees, allOffices }: EmployeesTableProps) {
       header: 'Status',
       cell: (info) => <StatusBadge status={info.getValue()} />,
       enableGlobalFilter: false,
+    }),
+    columnHelper.display({
+      id: 'documents',
+      header: 'Files',
+      cell: ({ row }) => (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-lg hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 transition-colors"
+          title="Employee Documents"
+          onClick={() =>
+            setDocumentsEmployee({
+              id: row.original.id,
+              name: `${row.original.first_name} ${row.original.last_name}`,
+            })
+          }
+        >
+          <FolderOpen className="h-4 w-4" />
+        </Button>
+      ),
     }),
     columnHelper.display({
       id: 'actions',
@@ -518,6 +540,16 @@ export function EmployeesTable({ employees, allOffices }: EmployeesTableProps) {
           router.refresh();
         }}
       />
+
+      {/* Employee Documents Dialog */}
+      {documentsEmployee && (
+        <EmployeeDocumentsDialog
+          open={!!documentsEmployee}
+          onOpenChangeAction={(o) => { if (!o) setDocumentsEmployee(null); }}
+          employeeId={documentsEmployee.id}
+          employeeName={documentsEmployee.name}
+        />
+      )}
     </div>
   );
 }
