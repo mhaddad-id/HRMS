@@ -159,10 +159,7 @@ export function PayrollTable({
     columnHelper.accessor('amount', {
       header: 'Net Pay',
       cell: (info) => (
-        <div className="flex items-center justify-between gap-2 group/cell">
-          <span className="text-sm font-bold text-emerald-600">{formatMoney(info.getValue(), info.row.original.currency)}</span>
-          <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover/cell:opacity-100 transition-all -translate-x-2 group-hover/cell:translate-x-0" />
-        </div>
+        <span className="text-sm font-bold text-emerald-600">{formatMoney(info.getValue(), info.row.original.currency)}</span>
       ),
     }),
   ], []);
@@ -721,11 +718,6 @@ export function PayrollTable({
                 {table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    onClick={() => setSelectedId(row.original.id)}
-                    className={cn(
-                      "cursor-pointer",
-                      selectedId === row.original.id ? "bg-emerald-50/80" : ""
-                    )}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
@@ -752,85 +744,7 @@ export function PayrollTable({
           </div>
         </div>
 
-        {/* Right Side: Payslip Details Panel */}
-        {selectedPayroll ? (
-          <div className="lg:w-[350px] w-full shrink-0 transition-all duration-300 opacity-100 translate-x-0">
-            <div className="bg-card rounded-2xl border border-emerald-100 shadow-xl overflow-hidden sticky top-6">
-              <div className="bg-emerald-600 p-6 text-white relative">
-                <div className="absolute right-6 top-6 opacity-20">
-                  <DollarSign size={80} />
-                </div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-80 mb-1">Monthly Payslip</p>
-                <h3 className="text-xl font-bold tracking-tight">{selectedPayroll.name}</h3>
-                <p className="text-sm opacity-90">{selectedPayroll.position}</p>
-              </div>
 
-              <div className="p-6 space-y-6">
-                <div>
-                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 border-b pb-2">Earnings Breakdown</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Base Salary</span>
-                      <span className="font-bold">{formatMoney(selectedPayroll.salary, selectedPayroll.currency)}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm text-emerald-600 font-medium">
-                      <span>Worked Days ({selectedPayroll.worked_days}d)</span>
-                      <span>Full</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 border-b pb-2">Deductions</h4>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Unpaid Leave ({selectedPayroll.lwp}d)</span>
-                      <span className="font-bold text-destructive">
-                        {selectedPayroll.lwp > 0 ? `-${formatMoney(selectedPayroll.deduction, selectedPayroll.currency)}` : '-'}
-                      </span>
-                    </div>
-                    {selectedPayroll.lwp === 0 && (
-                      <p className="text-[10px] text-muted-foreground italic">No deductions for this period.</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="pt-4 mt-2 bg-emerald-50/50 -mx-6 px-6 pb-6 border-t border-emerald-100/50">
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-800/60 mb-1">Net Payable Amount</p>
-                      <p className="text-2xl font-black text-emerald-700 tracking-tighter">
-                        {formatMoney(selectedPayroll.amount, selectedPayroll.currency)}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] text-muted-foreground">Status</p>
-                      <p className="text-[10px] font-bold text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full uppercase tracking-wider">Ready</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <div className="p-3 bg-muted/30 rounded-xl border border-muted/50 text-center">
-                    <p className="text-[9px] font-bold uppercase text-muted-foreground mb-1">Currency</p>
-                    <p className="text-xs font-bold">{selectedPayroll.currency}</p>
-                  </div>
-                  <div className="p-3 bg-muted/30 rounded-xl border border-muted/50 text-center">
-                    <p className="text-[9px] font-bold uppercase text-muted-foreground mb-1">Office</p>
-                    <p className="text-xs font-bold truncate">{selectedPayroll.office_name}</p>
-                  </div>
-                </div>
-
-                <Button
-                  className="w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-lg shadow-emerald-200"
-                  onClick={() => setSelectedId(null)}
-                >
-                  Close Details
-                </Button>
-              </div>
-            </div>
-          </div>
-        ) : null}
       </div>
     </div>
   );

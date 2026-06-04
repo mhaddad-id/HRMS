@@ -30,6 +30,12 @@ import {
 } from '@/components/ui/table';
 import { formatDate } from '@/lib/utils';
 import { CreateReviewDialog } from './create-review-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface ReviewRow {
   id: string;
@@ -50,6 +56,7 @@ interface ReviewRow {
 
 export function PerformanceClient({ reviews, employees }: { reviews: ReviewRow[], employees: any[] }) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [feedbackReview, setFeedbackReview] = useState<ReviewRow | null>(null);
 
   const filteredReviews = reviews.filter(r =>
     `${r.employee?.first_name} ${r.employee?.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -201,9 +208,14 @@ export function PerformanceClient({ reviews, employees }: { reviews: ReviewRow[]
                         <p className="text-xs text-muted-foreground italic leading-relaxed line-clamp-2">
                           "{r.notes ?? 'No specific evaluator notes provided.'}"
                         </p>
-                        <button className="text-[10px] text-emerald-600 font-bold uppercase hover:underline w-fit opacity-0 group-hover:opacity-100 transition-opacity">
-                          Read full feedback <ArrowUpRight className="inline-block h-2.5 w-2.5 ml-0.5" />
-                        </button>
+                        {r.notes && (
+                          <button
+                            onClick={() => setFeedbackReview(r)}
+                            className="text-[10px] text-emerald-600 font-bold uppercase hover:underline w-fit opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            Read full feedback <ArrowUpRight className="inline-block h-2.5 w-2.5 ml-0.5" />
+                          </button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -228,6 +240,55 @@ export function PerformanceClient({ reviews, employees }: { reviews: ReviewRow[]
           )}
         </div>
       </div>
+      {/* Full Feedback Dialog */}
+      <Dialog open={!!feedbackReview} onOpenChange={(open) => !open && setFeedbackReview(null)}>
+        <DialogContent className="max-w-lg rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-3">
+              {feedbackReview?.employee && (
+                <Avatar className="h-10 w-10 border border-emerald-100 shadow-sm">
+                  <AvatarImage src={feedbackReview.employee.profile_photo_url || ''} />
+                  <AvatarFallback className="bg-emerald-100 text-emerald-700 text-xs font-bold uppercase">
+                    {feedbackReview.employee.first_name[0]}{feedbackReview.employee.last_name[0]}
+                  </AvatarFallback>
+                </Avatar>
+              )}
+              <div>
+                <p className="text-lg font-bold">
+                  {feedbackReview?.employee?.first_name} {feedbackReview?.employee?.last_name}
+                </p>
+                <p className="text-[11px] text-muted-foreground font-medium">
+                  {feedbackReview?.employee?.position} • {feedbackReview?.employee?.office?.name ?? '—'}
+                </p>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Calendar className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="font-semibold">
+                  {feedbackReview && formatDate(feedbackReview.review_period_start)} – {feedbackReview && formatDate(feedbackReview.review_period_end)}
+                </span>
+              </div>
+              <Badge variant="outline" className={`font-black text-sm rounded-xl px-3 py-1 ${(feedbackReview?.score ?? 0) >= 4
+                ? 'bg-emerald-50 border-emerald-100 text-emerald-600'
+                : (feedbackReview?.score ?? 0) >= 3
+                  ? 'bg-amber-50 border-amber-100 text-amber-600'
+                  : 'bg-rose-50 border-rose-100 text-rose-600'
+                }`}>
+                {feedbackReview?.score.toFixed(1)} / 5.0
+              </Badge>
+            </div>
+            <div className="bg-muted/30 rounded-2xl p-5 border border-muted/50">
+              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-3">Evaluator Notes & Feedback</p>
+              <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                {feedbackReview?.notes ?? 'No specific evaluator notes provided.'}
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

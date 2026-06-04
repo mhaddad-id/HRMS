@@ -101,14 +101,22 @@ export function OfficePermissions({ office }: OfficePermissionsProps) {
   }
 
   async function togglePermission(id: string, field: string, value: boolean) {
+    // Optimistic update for instant feedback
+    setAccessList((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, [field]: value } : a))
+    );
     try {
       await updateOfficeAccess(id, { [field]: value });
       toast({
         title: 'Success',
         description: 'Permission updated',
       });
-      loadData();
+      // Removed loadData() to avoid long wait times
     } catch (error) {
+      // Revert optimistic update on error
+      setAccessList((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, [field]: !value } : a))
+      );
       toast({
         title: 'Error',
         description: 'Failed to update permission',
@@ -185,7 +193,14 @@ export function OfficePermissions({ office }: OfficePermissionsProps) {
                   <SelectContent className="rounded-xl shadow-2xl border-none p-1">
                     {availableUsers.map((user) => (
                       <SelectItem key={user.id} value={user.id} className="rounded-lg py-2">
-                        {user.full_name || user.email}
+                        <span className="flex flex-col items-start gap-0.5">
+                          <span>{user.full_name || user.email}</span>
+                          {user.role && (
+                            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                              {user.role.replace('_', ' ')}
+                            </span>
+                          )}
+                        </span>
                       </SelectItem>
                     ))}
                     {availableUsers.length === 0 && (

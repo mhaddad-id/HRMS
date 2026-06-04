@@ -10,6 +10,10 @@ export function roleHome(role: UserRole | null | undefined): string {
   return ROLE_HOME[role ?? 'employee'];
 }
 
+export function canManageOfficeAccess(role: UserRole | null | undefined): boolean {
+  return role === 'admin' || role === 'hr_manager';
+}
+
 const ADMIN_ONLY_PREFIXES = ['/dashboard/admin'];
 const HR_ONLY_PREFIXES = ['/dashboard/hr'];
 const EMPLOYEE_ONLY_PREFIXES = ['/dashboard/employee'];

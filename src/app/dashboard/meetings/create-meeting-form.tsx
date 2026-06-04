@@ -18,6 +18,8 @@ import { createClient } from '@/lib/supabase/client';
 import { sendMeetingInvitationEmail } from '@/app/actions/emails';
 import { createNotification } from '@/app/actions/notifications';
 import { useToast } from '@/hooks/use-toast';
+import { DatePicker } from '@/components/ui/date-picker';
+import { format } from 'date-fns';
 
 interface UserRow {
   id: string;
@@ -47,7 +49,8 @@ export function CreateMeetingForm({
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [scheduledAt, setScheduledAt] = useState('');
+  const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
+  const [scheduledTime, setScheduledTime] = useState('09:00');
   const [duration, setDuration] = useState(60);
   const [location, setLocation] = useState('');
   const [officeId, setOfficeId] = useState<string>('none');
@@ -70,12 +73,20 @@ export function CreateMeetingForm({
       data: { user },
     } = await supabase.auth.getUser();
 
+    if (!scheduledDate) {
+      toast({ title: 'Date required', description: 'Please select a meeting date.', variant: 'destructive' });
+      setLoading(false);
+      return;
+    }
+
+    const scheduledAtStr = `${format(scheduledDate, 'yyyy-MM-dd')}T${scheduledTime}`;
+
     const { data: meeting } = await supabase
       .from('meetings')
       .insert({
         title,
         description: description || null,
-        scheduled_at: new Date(scheduledAt).toISOString(),
+        scheduled_at: new Date(scheduledAtStr).toISOString(),
         duration_minutes: duration,
         location: location || null,
         office_id: officeId !== 'none' ? officeId : null,
@@ -103,7 +114,7 @@ export function CreateMeetingForm({
             to: u.email,
             recipientName: u.full_name || 'Team member',
             meetingTitle: title,
-            scheduledAt: new Date(scheduledAt).toISOString(),
+            scheduledAt: new Date(scheduledAtStr).toISOString(),
             duration,
             location: emailLocation || 'Virtual',
           })
@@ -116,7 +127,7 @@ export function CreateMeetingForm({
           createNotification({
             userId: user_id,
             title: 'New Meeting Scheduled',
-            message: `You have been added to: ${title} at ${new Date(scheduledAt).toLocaleString()}`,
+            message: `You have been added to: ${title} at ${new Date(scheduledAtStr).toLocaleString()}`,
             type: 'info',
             link: '/dashboard/meetings',
           })
@@ -164,29 +175,58 @@ export function CreateMeetingForm({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div className="space-y-1.5 group">
               <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-1.5 group-focus-within:text-emerald-600 transition-colors">
-                <Calendar className="h-3 w-3" /> Date & Time
+                <Calendar className="h-3 w-3" /> Date
               </Label>
-              <Input
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-                required
-                className="rounded-2xl h-12 bg-muted/30 border-border/50 focus:bg-background focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm"
-              />
+              <div className="pt-0.5">
+                <DatePicker
+                  date={scheduledDate}
+                  onDateChangeAction={setScheduledDate}
+                  placeholder="Select Date"
+                />
+              </div>
             </div>
-            <div className="space-y-1.5 group">
-              <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-1.5 group-focus-within:text-emerald-600 transition-colors">
-                <Clock className="h-3 w-3" /> Duration (min)
-              </Label>
-              <Input
-                type="number"
-                value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))}
-                className="rounded-2xl h-12 bg-muted/30 border-border/50 focus:bg-background focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm"
-              />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5 group">
+                <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-1.5 group-focus-within:text-emerald-600 transition-colors">
+                  <Clock className="h-3 w-3" /> Time
+                </Label>
+                <Select value={scheduledTime} onValueChange={setScheduledTime}>
+                  <SelectTrigger className="rounded-2xl h-10 bg-muted/30 border-border/50 focus:bg-background focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm">
+                    <SelectValue placeholder="Select time" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl shadow-xl border-border/50 max-h-[200px]">
+                    {Array.from({ length: 19 }).map((_, i) => {
+                      const hourOffset = 9 + Math.floor(i / 2);
+                      const hours = hourOffset.toString().padStart(2, '0');
+                      const minutes = i % 2 === 0 ? '00' : '30';
+                      const timeString = `${hours}:${minutes}`;
+                      const ampm = hourOffset >= 12 ? 'PM' : 'AM';
+                      const displayHours = hourOffset % 12 || 12;
+                      const displayTime = `${displayHours}:${minutes} ${ampm}`;
+                      return (
+                        <SelectItem key={timeString} value={timeString} className="rounded-xl m-1">
+                          {displayTime}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5 group">
+                <Label className="text-[11px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-1.5 group-focus-within:text-emerald-600 transition-colors">
+                  <Clock className="h-3 w-3" /> Duration
+                </Label>
+                <Input
+                  type="number"
+                  value={duration}
+                  onChange={(e) => setDuration(Number(e.target.value))}
+                  className="rounded-2xl h-10 bg-muted/30 border-border/50 focus:bg-background focus:ring-emerald-500/20 focus:border-emerald-500 transition-all shadow-sm"
+                />
+              </div>
             </div>
           </div>
 

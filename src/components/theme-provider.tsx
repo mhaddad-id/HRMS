@@ -32,17 +32,49 @@ export function ThemeProvider({
   React.useEffect(() => {
     const root = window.document.documentElement;
     const media = window.matchMedia('(prefers-color-scheme: dark)');
-    const apply = (dark: boolean) => {
+
+    // Track printing state – some browsers (Chrome) temporarily toggle
+    // prefers-color-scheme while the print dialog is open, which would
+    // incorrectly flip the theme.
+    let printing = false;
+    const onBeforePrint = () => { printing = true; };
+    const onAfterPrint = () => {
+      printing = false;
+      // Re-apply the correct theme after print finishes
+      if (theme === 'system') {
+        applyTheme(media.matches);
+      }
+    };
+
+    const applyTheme = (dark: boolean) => {
       root.classList.remove('light', 'dark');
       root.classList.add(dark ? 'dark' : 'light');
       setResolved(dark ? 'dark' : 'light');
     };
+
+    // Stable callback so removeEventListener actually removes it
+    const onMediaChange = (e: MediaQueryListEvent) => {
+      if (printing) return; // Ignore changes triggered by print dialog
+      applyTheme(e.matches);
+    };
+
+    window.addEventListener('beforeprint', onBeforePrint);
+    window.addEventListener('afterprint', onAfterPrint);
+
     if (theme === 'system') {
-      apply(media.matches);
-      media.addEventListener('change', (e) => apply(e.matches));
-      return () => media.removeEventListener('change', (e) => apply(e.matches));
+      applyTheme(media.matches);
+      media.addEventListener('change', onMediaChange);
+      return () => {
+        media.removeEventListener('change', onMediaChange);
+        window.removeEventListener('beforeprint', onBeforePrint);
+        window.removeEventListener('afterprint', onAfterPrint);
+      };
     }
-    apply(theme === 'dark');
+    applyTheme(theme === 'dark');
+    return () => {
+      window.removeEventListener('beforeprint', onBeforePrint);
+      window.removeEventListener('afterprint', onAfterPrint);
+    };
   }, [theme]);
 
   const setTheme = React.useCallback(

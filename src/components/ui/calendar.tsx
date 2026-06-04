@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
 import { DayPicker } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
@@ -13,17 +13,45 @@ function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  captionLayout = "label",
+  formatters,
+  components,
   ...props
 }: CalendarProps) {
+  const usesDropdown =
+    captionLayout === "dropdown" ||
+    captionLayout === "dropdown-months" ||
+    captionLayout === "dropdown-years"
+
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
+      captionLayout={captionLayout}
+      formatters={{
+        formatMonthDropdown: (date) =>
+          date.toLocaleString("default", { month: "short" }),
+        ...formatters,
+      }}
       className={cn("p-3", className)}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4 relative px-3 pb-3",
-        month_caption: "flex justify-center pt-1 relative items-center h-9",
-        caption_label: "text-sm font-medium",
+        month_caption: cn(
+          "flex justify-center pt-1 relative items-center",
+          usesDropdown ? "h-10 gap-2" : "h-9"
+        ),
+        caption_label: cn(
+          "text-sm font-medium",
+          usesDropdown &&
+            "flex h-8 items-center gap-1 rounded-md px-2 [&>svg]:size-3.5 [&>svg]:text-muted-foreground"
+        ),
+        dropdowns: "flex w-full items-center justify-center gap-2",
+        dropdown_root: cn(
+          buttonVariants({ variant: "outline" }),
+          "relative h-8 min-w-[4.5rem] rounded-md border border-input bg-background px-2 text-sm font-medium shadow-sm focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-1"
+        ),
+        dropdown:
+          "absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0",
         nav: "flex items-center",
         button_previous: cn(
           buttonVariants({ variant: "outline" }),
@@ -59,9 +87,15 @@ function Calendar({
       }}
       components={{
         Chevron: ({ orientation }) => {
-          const Icon = orientation === "left" ? ChevronLeft : ChevronRight
-          return <Icon className="h-4 w-4" />
+          if (orientation === "left") {
+            return <ChevronLeft className="h-4 w-4" />
+          }
+          if (orientation === "right") {
+            return <ChevronRight className="h-4 w-4" />
+          }
+          return <ChevronDown className="h-4 w-4 opacity-60" />
         },
+        ...components,
       }}
       {...props}
     />

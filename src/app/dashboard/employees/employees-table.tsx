@@ -157,6 +157,11 @@ export function EmployeesTable({ employees, allOffices }: EmployeesTableProps) {
       ),
       enableGlobalFilter: false
     }),
+    columnHelper.accessor('salary', {
+      header: 'Salary',
+      cell: (info) => formatCurrency(info.getValue()),
+      enableGlobalFilter: false,
+    }),
     columnHelper.accessor('currency', {
       header: 'Currency',
       cell: (i) => (
@@ -192,11 +197,6 @@ export function EmployeesTable({ employees, allOffices }: EmployeesTableProps) {
         }
         return <span className="text-sm">{val}</span>;
       },
-      enableGlobalFilter: false,
-    }),
-    columnHelper.accessor('salary', {
-      header: 'Salary',
-      cell: (info) => formatCurrency(info.getValue()),
       enableGlobalFilter: false,
     }),
     columnHelper.accessor('employment_date', {

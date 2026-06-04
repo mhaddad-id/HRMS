@@ -15,7 +15,7 @@ export default async function AdminUsersPage() {
         return (
             <div className="space-y-4">
                 <div>
-                    <h1 className="text-3xl font-bold">Auth & Roles</h1>
+                    <h1 className="text-3xl font-bold">Roles</h1>
                     <p className="text-muted-foreground">Manage organization users and roles</p>
                 </div>
                 <div className="bg-destructive/10 text-destructive p-4 rounded-xl border border-destructive/20">
@@ -32,7 +32,7 @@ export default async function AdminUsersPage() {
                     <ShieldCheck className="h-6 w-6 text-emerald-600 dark:text-emerald-300" />
                 </div>
                 <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">Auth & Roles</h1>
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">Roles</h1>
                     <p className="text-muted-foreground">Manage organization users and roles</p>
                 </div>
             </div>

@@ -118,7 +118,7 @@ export function ModernDashboard({
                   </div>
                 </div>
                 <div className="text-3xl font-bold text-foreground tabular-nums">
-                  {Number(profile?.annualScore ?? 0).toFixed(3)}
+                  {Number(profile?.annualScore ?? 0).toFixed(0)}
                 </div>
                 <div className="w-full bg-emerald-100 dark:bg-emerald-900/40 rounded-full h-1.5">
                   <div
@@ -138,7 +138,8 @@ export function ModernDashboard({
                   </div>
                 </div>
                 <div className="text-3xl font-bold text-foreground tabular-nums">
-                  {Number(profile?.sickScore ?? 0).toFixed(3)}
+                  {Number(profile?.sickScore ?? 0).toFixed(0)}
+
                 </div>
                 <div className="w-full bg-sky-100 dark:bg-sky-900/40 rounded-full h-1.5">
                   <div
@@ -158,7 +159,7 @@ export function ModernDashboard({
                   </div>
                 </div>
                 <div className="text-3xl font-bold text-foreground tabular-nums">
-                  {Number(profile?.competenceScore ?? 0).toFixed(3)}
+                  {Number(profile?.competenceScore ?? 0).toFixed(0)}
                 </div>
                 <div className="w-full bg-violet-100 dark:bg-violet-900/40 rounded-full h-1.5">
                   <div

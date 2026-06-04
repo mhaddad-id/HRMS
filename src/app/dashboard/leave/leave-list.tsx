@@ -450,13 +450,13 @@ export function LeaveList({
                     )}
 
                     {/* HR Approval Button */}
-                    {isAdminOrHR && selectedLeave.hr_status === 'pending' && (selectedLeave.manager_status === 'approved' || (currentEmployeeId && selectedLeave.employee?.supervisor_id === currentEmployeeId)) && (
+                    {isAdminOrHR && selectedLeave.hr_status === 'pending' && selectedLeave.manager_status === 'approved' && (!currentEmployeeId || selectedLeave.employee?.supervisor_id !== currentEmployeeId) && (
                       <div className="flex gap-3">
                         <Button
                           className="flex-1 h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-200 transition-all dark:shadow-none"
                           onClick={() => updateStatus(selectedLeave.id, 'approved', 'hr')}
                         >
-                          {selectedLeave.manager_status === 'pending' ? 'Direct Approval (HR)' : 'Approve (As HR)'}
+                          Approve (As HR)
                         </Button>
                         <Button
                           variant="outline"

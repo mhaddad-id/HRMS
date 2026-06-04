@@ -218,6 +218,9 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
             date={form.watch('date_of_birth') ? new Date(form.watch('date_of_birth') || '') : undefined}
             onDateChangeAction={(date: Date | undefined) => form.setValue('date_of_birth', date ? format(date, "yyyy-MM-dd") : '')}
             placeholder="Select birth date"
+            fromYear={1940}
+            toYear={new Date().getFullYear()}
+            defaultCalendarMonth={new Date(1990, 0, 1)}
           />
         </div>
       </div>
@@ -351,6 +354,8 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
           <DatePicker
             date={form.watch('employment_date') ? new Date(form.watch('employment_date') || '') : undefined}
             onDateChangeAction={(date: Date | undefined) => form.setValue('employment_date', date ? format(date, "yyyy-MM-dd") : '')}
+            fromYear={1990}
+            toYear={new Date().getFullYear() + 1}
           />
           {form.formState.errors.employment_date?.message && (
             <p className="text-sm text-destructive">{form.formState.errors.employment_date.message}</p>
@@ -362,6 +367,8 @@ export function EmployeeForm({ employees, initial, onSuccess }: EmployeeFormProp
             date={form.watch('ending_date') ? new Date(form.watch('ending_date') || '') : undefined}
             onDateChangeAction={(date: Date | undefined) => form.setValue('ending_date', date ? format(date, "yyyy-MM-dd") : '')}
             placeholder="Optional"
+            fromYear={1990}
+            toYear={new Date().getFullYear() + 10}
           />
         </div>
 

@@ -37,6 +37,7 @@ export async function sendWelcomeEmail({
     return { success: true, data };
   } catch (err) {
     console.error('Unexpected error sending email:', err);
+    return { success: false, error: err };
   }
 }
 

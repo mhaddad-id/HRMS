@@ -180,7 +180,7 @@ export default async function EmployeeDashboardPage() {
                   </div>
                 </div>
                 <div className="text-3xl font-bold text-foreground tabular-nums">
-                  {Number(employee.annual_score).toFixed(3)}
+                  {Number(employee.annual_score).toFixed(0)}
                 </div>
                 <div className="w-full bg-emerald-100 dark:bg-emerald-900/40 rounded-full h-1.5">
                   <div
@@ -200,7 +200,7 @@ export default async function EmployeeDashboardPage() {
                   </div>
                 </div>
                 <div className="text-3xl font-bold text-foreground tabular-nums">
-                  {Number(employee.sick_score).toFixed(3)}
+                  {Number(employee.sick_score).toFixed(0)}
                 </div>
                 <div className="w-full bg-sky-100 dark:bg-sky-900/40 rounded-full h-1.5">
                   <div
@@ -220,7 +220,7 @@ export default async function EmployeeDashboardPage() {
                   </div>
                 </div>
                 <div className="text-3xl font-bold text-foreground tabular-nums">
-                  {Number(employee.competence_score).toFixed(3)}
+                  {Number(employee.competence_score).toFixed(0)}
                 </div>
                 <div className="w-full bg-violet-100 dark:bg-violet-900/40 rounded-full h-1.5">
                   <div

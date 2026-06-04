@@ -9,7 +9,7 @@ export default function HomePage() {
     <div className="min-h-screen flex flex-col bg-background font-sans selection:bg-primary/20">
       {/* Navbar */}
       <header className="px-6 relative z-50 py-4 flex items-center justify-between border-b border-border/40 bg-background/80 backdrop-blur-md sticky top-0">
-        <Logo text="HRMS Core" />
+        <Logo text="HRMS" />
         <div className="flex items-center gap-3">
           <Button asChild className="rounded-full px-6 shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-shadow">
             <Link href="/login">Sign in</Link>
